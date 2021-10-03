@@ -1,12 +1,52 @@
 import sys
 import numpy as np
 
+
+
+class RandomStrategy:
+    def __init__(self):
+        pass
+
+    def make_move(self, board, previous_move_row=None, previous_move_col=None):
+        return np.random.choice(return_open_spaces(board, len(board), len(board[0])))
+
+class GreedyStrategy:
+    def __init__(self):
+        pass
+
+    def make_move(self, board, previous_move_row=None, previous_move_col=None):
+        print(f"Previous move: {previous_move_row}, {previous_move_col}")
+        if previous_move_row == None:
+            return np.random.choice(return_open_spaces(board, len(board), len(board[0])))
+        
+        open_spaces = []
+        for r in [previous_move_row - 1, previous_move_row, previous_move_row + 1]:
+            for c in [previous_move_col - 1, previous_move_col, previous_move_col + 1]:
+                try:
+                    if (board[r, c, 0]) > 0 and (board[r, c, 1] == 0):
+                        open_spaces.append(board[r, c, 0])
+                except: pass
+        if len(open_spaces) > 0:
+            return np.random.choice(open_spaces)
+        else:
+            return np.random.choice(return_open_spaces(board, len(board), len(board[0])))
+
 class IndexError(Exception):
     pass
 
+
+def return_open_spaces(board, rows, cols):
+    open_spaces = []
+    for r in range(rows):
+        for c in range(cols):
+            if board[r, c, 1] == 0:
+                open_spaces.append(board[r, c, 0])
+    return open_spaces
+    
 class CanoeGame:
     def __init__(self):
         self.new_game()
+        self.strategy = GreedyStrategy()
     
     def next_turn(self):
         self.turn = self.turn % 2 + 1
@@ -15,6 +55,10 @@ class CanoeGame:
         self.turn = np.random.randint(2) + 1
         self.team1 = []
         self.team2 = []
+        self.rows = rows
+        self.cols = cols
+        self.previous_move_row = None
+        self.previous_move_col = None
 
         board = np.zeros((rows, cols, 2), dtype=np.int8)
         empties = [(0, 0), (0, 3), (0, 4), (0, 5), (0, 6), (0, 7), (0, 8), (0, 9), (0, 12), (4, 0), (4, 12), (5, 0), (5, 1), (5, 2), (5, 10), (5, 11), (5, 12)]
@@ -22,8 +66,8 @@ class CanoeGame:
             board[e[0]][e[1]][1] = -1
 
         count = 1
-        for row in range(len(board)):
-            for col in range(len(board[row])):
+        for row in range(rows):
+            for col in range(cols):
                 if board[row][col][1] != -1:
                     board[row][col][0] = count
                     count += 1
@@ -68,7 +112,10 @@ class CanoeGame:
                 print_colored(0, "No spaces left. It's a draw!")
                 self.new_game()
             else:
+                self.previous_move_row = row
+                self.previous_move_col = col
                 self.next_turn()
+
 
     def check_solutions(self, moves):
         canoes = []
@@ -125,13 +172,10 @@ canoe = CanoeGame()
 while True:
     
     canoe.print_board()
-    turn_str = "Select input \033[91m■\033[0m:\r\n" if (canoe.turn == 1) else "Select input \033[93m■\033[0m:\r\n"
-    selection = input(turn_str)
 
-    if selection == 'q':
-        break
-    else:
-        index = np.where(canoe.board[:,:,0] == int(selection))
+    if canoe.turn == 1:
+        ai_move = canoe.strategy.make_move(canoe.board, canoe.previous_move_row, canoe.previous_move_col)
+        index = np.where(canoe.board[:,:,0] == ai_move)
         try:
             row = index[0][0]
             col = index[1][0]
@@ -141,11 +185,33 @@ while True:
                 raise IndexError
             
             canoe.make_move(row, col)
-        
-        except IndexError:
-            print_error("This index is occupied. Please try again.")
-
         except Exception as e:
-            print_error("Invalid index. Please try again.")
             print(e)
+            sys.exit(f"Illegal AI move {index}")
+            
+
+    else:
+        turn_str = "Select input \033[91m■\033[0m:\r\n" if (canoe.turn == 1) else "Select input \033[93m■\033[0m:\r\n"
+        selection = input(turn_str)
+
+        if selection == 'q':
+            break
+        else:
+            index = np.where(canoe.board[:,:,0] == int(selection))
+            try:
+                row = index[0][0]
+                col = index[1][0]
+                if canoe.board[row, col, 0] <= 0:
+                    raise Exception("Invalid index")
+                if canoe.board[row, col, 1] != 0:
+                    raise IndexError
+                
+                canoe.make_move(row, col)
+            
+            except IndexError:
+                print_error("This index is occupied. Please try again.")
+
+            except Exception as e:
+                print_error("Invalid index. Please try again.")
+                print(e)
 
