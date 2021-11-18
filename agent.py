@@ -1,5 +1,6 @@
 import numpy as np
 from board import Move, Point
+import sys
 
 class Agent:
     def __init__(self):
@@ -8,7 +9,7 @@ class Agent:
     def select_move(self, game_state):
         raise NotImplementedError()
 
-class RandomStrategy(Agent):
+class RandomAgent(Agent):
     def __init__(self):
         pass
 
@@ -17,7 +18,7 @@ class RandomStrategy(Agent):
         open_spaces = game.board.return_open_spaces()
         return Move.play(open_spaces[np.random.choice(len(open_spaces))])
 
-class GreedyStrategy(Agent):
+class GreedyAgent(Agent):
     def __init__(self):
         pass
 
@@ -42,7 +43,7 @@ class GreedyStrategy(Agent):
             open_spaces = game.board.return_open_spaces()
             return Move.play(open_spaces[np.random.choice(len(open_spaces))])
 
-class GreedyGreedyStrategy(Agent):
+class GreedyGreedyAgent(Agent):
     def __init__(self):
         pass
 
@@ -89,6 +90,33 @@ class GreedyGreedyStrategy(Agent):
             return okay_moves
         else:
             return open_spaces
+
+class DeepLearningAgent(Agent):
+    def __init__(self, model, encoder):
+        Agent.__init__(self)
+        self.model = model
+        self.encoder = encoder
+
+    def predict(self, game_state):
+        encoded_state = self.encoder.encode(game_state)
+        input_tensor = np.array([encoded_state]).reshape(1, 6, 13, 1)
+        return self.model.predict(input_tensor)[0]
+
+
+    def select_move(self, game_state):
+        num_moves = self.encoder.board_width * self.encoder.board_height
+        move_probs = self.predict(game_state)
+        move_probs = move_probs ** 3
+        eps = 1e-6
+        move_probs = np.clip(move_probs, eps, 1-eps)
+        move_probs = move_probs / np.sum(move_probs)
+        candidates = np.arange(num_moves)
+        ranked_moves = np.random.choice(candidates, num_moves, replace=False, p=move_probs)
+        for point_idx in ranked_moves:
+            point = self.encoder.decode_point_index(point_idx)
+            if game_state.is_valid_move(Move.play(point)):
+                return Move.play(point)
+
 
 class IndexError(Exception):
     pass

@@ -1,6 +1,6 @@
 - **Random**: choose from any open space
 - **Greedy**: choose adjacent to opponent's previous move
-- **Greedy greedy**: take any move that wins, avoid any move that immediately loses, else choose adjacent to opponent (note: does not automatically block winning canoes)
+- **Greedy greedy**: take any move that wins, avoid any move that allows immediately loss, else choose adjacent to opponent (note: does not automatically *block* winning canoes)
 
 ## Bot comparison
 
