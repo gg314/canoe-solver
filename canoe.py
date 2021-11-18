@@ -3,7 +3,7 @@ import sys
 import numpy as np
 import time
 import agent
-from board import GameState, Player, OnePlaneEncoder, get_encoder_by_name
+from board import GameState, Player
 
 
 def main():
@@ -15,7 +15,7 @@ def main():
         Player.yellow: agent.GreedyAgent()
     }
 
-    for trial in range(1):
+    for trial in range(10):
         game = GameState.new_game()
 
         while not game.is_over():

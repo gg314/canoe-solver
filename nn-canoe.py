@@ -7,7 +7,7 @@ from tensorflow.keras.layers import Conv2D, Dense, Dropout, Flatten, MaxPooling2
 from tensorflow.keras.optimizers import Adadelta
 import numpy as np
 import sys
-from board import OnePlaneEncoder
+import encoders
 
 
 np.random.seed(123)
@@ -15,7 +15,7 @@ X = np.load('./generated_games/features.npy')
 Y = np.load('./generated_games/labels.npy')
 samples = X.shape[0]
 
-encoder = OnePlaneEncoder()
+encoder = encoders.OnePlaneEncoder()
 input_shape = (encoder.board_height, encoder.board_width, encoder.num_planes )
 X = X.reshape(samples, encoder.board_height, encoder.board_width, encoder.num_planes )
 # Y = Y.reshape(samples, board_size)
@@ -57,14 +57,14 @@ test_board = np.array([[
     0,  0,  0,  0,  0,  0,  0, -1, -1,  0,  0,  0,  0,  
 ]])
 
-test_board = test_board.reshape(1, 6, 13, 1)
+test_board = test_board.reshape(1, encoder.board_height, encoder.board_width, encoder.num_planes)
 
 move_probs = model.predict(test_board)[0]
 print(move_probs)
 i = 0
-for row in range(6):
+for row in range(encoder.board_height):
     row_formatted = []
-    for col in range(13):
+    for col in range(encoder.board_width):
         row_formatted.append(f"{move_probs[i]:.3f}")
         i += 1
     print(' '.join(row_formatted))

@@ -3,12 +3,13 @@ import sys
 import numpy as np
 import time
 import agent
+import encoders
 from board import GameState, Player, OnePlaneEncoder, get_encoder_by_name
 
 
 def generate_game(rounds=None, max_moves=100):
     boards, moves = [], []
-    encoder = OnePlaneEncoder()
+    encoder = encoders.OnePlaneEncoder()
     game = GameState.new_game()
     bot = agent.GreedyGreedyAgent()
     num_moves = 0

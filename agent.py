@@ -1,6 +1,9 @@
 import numpy as np
 from board import Move, Point
 import sys
+import utils
+import encoders
+from tensorflow.keras.optimizers import SGD
 
 class Agent:
     def __init__(self):
@@ -99,9 +102,8 @@ class DeepLearningAgent(Agent):
 
     def predict(self, game_state):
         encoded_state = self.encoder.encode(game_state)
-        input_tensor = np.array([encoded_state]).reshape(1, 6, 13, 1)
+        input_tensor = np.array([encoded_state]) # .reshape(1, 6, 13, 1)
         return self.model.predict(input_tensor)[0]
-
 
     def select_move(self, game_state):
         num_moves = self.encoder.board_width * self.encoder.board_height
@@ -117,6 +119,70 @@ class DeepLearningAgent(Agent):
             if game_state.is_valid_move(Move.play(point)):
                 return Move.play(point)
 
+class PolicyAgent(Agent):
+    def __init__(self, model, encoder):
+        self.model = model
+        self.encoder = encoder
+        self.temperature = 0.0
+        self.collector = None
+
+    def set_collector(self, collector):
+        self.collector = collector
+
+    def select_move(self, game_state):
+        num_moves = self.encoder.board_width * self.encoder.board_height
+        board_tensor = self.encoder.encode(game_state)
+        X = np.array([board_tensor])
+
+        if np.random.random() < self.temperature:
+            move_probs = np.ones(num_moves) / num_moves
+        else:
+            move_probs = self.model.predict(X)[0]
+
+        # Prevent move probs from getting stuck at 0 or 1.
+        eps = 1e-5
+        move_probs = np.clip(move_probs, eps, 1 - eps)
+        move_probs = move_probs / np.sum(move_probs)
+        candidates = np.arange(num_moves)
+        ranked_moves = np.random.choice(candidates, num_moves, replace = False, p = move_probs)
+        for point_idx in ranked_moves:
+            point = self.encoder.decode_point_index(point_idx)
+            if game_state.is_valid_move(Move.play(point)):
+                if self.collector is not None:
+                    self.collector.record_decision(state=board_tensor, action=point_idx)
+                return Move.play(point)
+
+    def train(self, experience, learning_rate, clipnorm, batch_size):
+        self.model.compile(loss='categorical_crossentropy', optimizer=SGD(learning_rate=learning_rate, clipnorm=clipnorm))
+        target_vectors = prepare_experience_data(experience, self.encoder.board_width, self.encoder.board_height)
+        self.model.fit(experience.states, target_vectors, batch_size=batch_size, epochs=1)
+        
+    def serialize(self, h5file):
+        h5file.create_group('encoder')
+        h5file['encoder'].attrs['name'] = self.encoder.name()
+        h5file.create_group('model')
+        utils.save_model_to_hdf5_group(self.model, h5file['model'])
+
+# make Experience suitable for keras.fit
+def prepare_experience_data(experience, board_width, board_height):
+    experience_size = experience.actions.shape[0]
+    target_vectors = np.zeros((experience_size, board_width * board_height))
+    for i in range(experience_size):
+        action = experience.actions[i]
+        reward = experience.rewards[i]
+        target_vectors[i][action] = reward
+    return target_vectors
+
+
+def load_policy_agent(h5file):
+    model = utils.load_model_from_hdf5_group(h5file['model'], custom_objects={})
+    encoder_name = h5file['encoder'].attrs['name']
+    if not isinstance(encoder_name, str):
+        encoder_name = encoder_name.decode('ascii')
+    # board_width = h5file['encoder'].attrs['board_width']
+    # board_height = h5file['encoder'].attrs['board_height']
+    encoder = encoders.OnePlaneEncoder()
+    return PolicyAgent(model, encoder)
 
 class IndexError(Exception):
     pass

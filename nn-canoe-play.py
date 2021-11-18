@@ -9,15 +9,16 @@ import numpy as np
 import sys
 import time
 import agent
-from board import GameState, Player, OnePlaneEncoder, get_encoder_by_name
+from board import GameState, Player
+import encoders
 
 
 def main():
     model = keras.models.load_model("./generated_models/test1.h5")
-    encoder = OnePlaneEncoder()
+    encoder = encoders.OnePlaneEncoder()
     bots = {
         Player.red: agent.DeepLearningAgent(model, encoder),
-        Player.yellow: agent.RandomAgent(),
+        Player.yellow: agent.GreedyGreedyAgent(),
     }
     wins = { "bot1": 0, "bot2": 0, "ties": 0 }
 
