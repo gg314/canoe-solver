@@ -35,12 +35,12 @@ class OnePlaneEncoder(Encoder):
         for r in range(self.board_height):
             for c in range(self.board_width):
                 p = Point(row = r+1, col = c+1)
-                if p in game_state.board.reds:
+                if game_state.board.reds[p.to_idx()]:
                     if next_player == Player.red:
                         board_tensor[r, c, 0] = 1
                     else:
                         board_tensor[r, c, 0] = -1
-                elif p in game_state.board.yellows:
+                elif game_state.board.yellows[p.to_idx()]:
                     if next_player == Player.yellow:
                         board_tensor[r, c, 0] = 1
                     else:

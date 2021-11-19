@@ -5,13 +5,16 @@ from collections import namedtuple
 import numpy as np
 
 class Point(namedtuple('Point', 'row col')):
-    def neightbors(self):
+    def neighbors(self):
         return [
             Point(self.row - 1, self.col),
             Point(self.row + 1, self.col),
             Point(self.row, self.col - 1),
             Point(self.row, self.col + 1)
         ]
+    
+    def to_idx(self):
+        return 13 * (self.row - 1) + (self.col - 1)
 
 class Move():
     # optional expansions: resigning, draws etc.
@@ -36,27 +39,30 @@ class Board():
     def __init__(self):
         self.num_rows = 6
         self.num_cols = 13
-        self.reds = []
-        self.yellows = []
+        self.reds = np.zeros(78, dtype=bool)
+        self.yellows = np.zeros(78, dtype=bool)
         self.open_spaces = 61
+        self.last_move = None
 
-    def print_board(self):
+    def print_board(self, winning_canoes=None):
         print("")
-        counter = 1
+        counter = 0
         for r in range(1, self.num_rows + 1):
             for c in range(1, self.num_cols + 1):
                 pt = Point(r, c)
+                symbol = "□"
+                if winning_canoes is not None:
+                    if counter in winning_canoes[0] or counter in winning_canoes[1]:
+                        symbol = "■"
                 if not self.is_on_grid(pt):
                     print("  ", end=" ")
-                elif pt in self.reds:
-                    print(f"\033[91m ■\033[0m", end=" ")
-                    counter += 1
-                elif pt in self.yellows:
-                    print(f"\033[93m ■\033[0m", end=" ")
-                    counter += 1
+                elif self.reds[counter]:
+                    print(f"\033[91m {symbol}\033[0m", end=" ")
+                elif self.yellows[counter]:
+                    print(f"\033[93m {symbol}\033[0m", end=" ")
                 else:
                     print(f"{counter:02d}\033[0m", end=" ")
-                    counter += 1
+                counter += 1
             print("")
         print("")
         
@@ -64,9 +70,9 @@ class Board():
         assert self.is_on_grid(point)
         assert self.get(point) is None
         if player == Player.red:
-            self.reds.append(point)
+            self.reds[point.to_idx()] = True
         else:
-            self.yellows.append(point)
+            self.yellows[point.to_idx()] = True
         self.last_move = point
         self.open_spaces -= 1
 
@@ -80,16 +86,15 @@ class Board():
         return open_spaces
         
     def is_on_grid(self, point):
-        if point in [Point(1, 1), Point(1, 4), Point(1, 5), Point(1, 6), Point(1, 7), Point(1, 8), Point(1, 9), Point(1, 10), Point(1, 13)]:
-            return False
-        if point in [Point(5, 1), Point(6, 1), Point(6, 2), Point(6, 3), Point(5, 13), Point(6, 11), Point(6, 12), Point(6, 13)]:
+        idx = point.to_idx()
+        if idx in [0, 3, 4, 5, 6, 7, 8, 9, 12, 52, 64, 65, 66, 67, 75, 76, 77]:
             return False
         return 1 <= point.row <= self.num_rows and 1 <= point.col <= self.num_cols
 
     def get(self, point):
-        if point in self.reds:
+        if self.reds[point.to_idx()]:
             return Player.red
-        elif point in self.yellows:
+        elif self.yellows[point.to_idx()]:
             return Player.yellow
         else:
             return None
@@ -107,19 +112,27 @@ print("MAKING SOLNS")
 for r in range(1, b.num_rows): # \__/
     for c in range(1, b.num_cols - 2):
         if None not in (b.is_on_grid(Point(r, c)), b.is_on_grid(Point(r, c+3)), b.is_on_grid(Point(r+1, c+1)), b.is_on_grid(Point(r+1, c+2))):
-            solns.append( (Point(r, c), Point(r, c+3), Point(r+1, c+1), Point(r+1, c+2) ) )
+            solns.append( (Point(r, c).to_idx(), Point(r, c+3).to_idx(), Point(r+1, c+1).to_idx(), Point(r+1, c+2).to_idx() ) )
 for r in range(1, b.num_rows): # /~~\
     for c in range(1, b.num_cols - 2):
         if None not in ( b.is_on_grid(Point(r, c+1)),  b.is_on_grid(Point(r, c+2)),  b.is_on_grid(Point(r+1, c)),  b.is_on_grid(Point(r+1, c+3))):
-            solns.append( ( Point(r, c+1),  Point(r, c+2),  Point(r+1, c),  Point(r+1, c+3)) )
+            solns.append( ( Point(r, c+1).to_idx(),  Point(r, c+2).to_idx(),  Point(r+1, c).to_idx(),  Point(r+1, c+3).to_idx()) )
 for r in range(1, b.num_rows - 2): # (
     for c in range(1, b.num_cols):
         if None not in (b.is_on_grid(Point(r, c+1)), b.is_on_grid(Point(r+1, c)), b.is_on_grid(Point(r+2, c)), b.is_on_grid(Point(r+3, c+1))):
-            solns.append( (Point(r, c+1), Point(r+1, c), Point(r+2, c), Point(r+3, c+1)) )
+            solns.append( (Point(r, c+1).to_idx(), Point(r+1, c).to_idx(), Point(r+2, c).to_idx(), Point(r+3, c+1).to_idx()) )
 for r in range(1, b.num_rows - 2): # )
     for c in range(1, b.num_cols):
         if None not in (b.is_on_grid(Point(r, c)), b.is_on_grid(Point(r+1, c+1)), b.is_on_grid(Point(r+2, c+1)), b.is_on_grid(Point(r+3, c))):
-            solns.append( (Point(r, c), Point(r+1, c+1), Point(r+2, c+1), Point(r+3, c)) )
+            solns.append( (Point(r, c).to_idx(), Point(r+1, c+1).to_idx(), Point(r+2, c+1).to_idx(), Point(r+3, c).to_idx()) )
+
+solns_dict = {}
+for idx in range(78):
+    solns_dict[idx] = []
+    for s in solns:
+        if idx in s:
+            solns_dict[idx].append(s)
+
 
 class GameState():
     def __init__(self, board, next_player, previous, move):
@@ -130,9 +143,10 @@ class GameState():
         self.winner = None
         self.winning_canoes = None
         self.solns = solns
+        self.solns_dict = solns_dict
         
     def print_board(self):
-        self.board.print_board()
+        self.board.print_board(self.winning_canoes)
 
     def apply_move(self, move):
         if move.is_play:
@@ -142,6 +156,8 @@ class GameState():
 
     # return 0 for tie, 1 for red win, -1 for yellow win, None for ongoing
     def is_over(self):
+        if self.last_move is None:
+            return False
         if self.board.open_spaces <= 0:
             self.winner = 0
             return True
@@ -151,17 +167,25 @@ class GameState():
         else:
             moves = self.board.yellows
             score = self.next_player.other
-        canoes = []
-        for s in self.solns:
-            if all(elem in moves for elem in s):
-                canoes.append(s)
-        if len(canoes) >= 2:
-            for c1 in canoes:
-                for c2 in canoes:
-                    if not any(cc in c2 for cc in c1):
-                        self.winner = score
-                        self.winning_canoes = [c1, c2]
-                        return True
+        last_move_id = self.last_move.point.to_idx()
+        for s in self.solns_dict[last_move_id]:
+            if all(moves[elem] for elem in s):
+                new_canoe = True
+                break
+            else:
+                new_canoe = False
+        if new_canoe:
+            canoes = []
+            for s in self.solns:
+                if all(moves[elem] for elem in s):
+                    canoes.append(s)
+            if len(canoes) >= 2:
+                for c1 in canoes:
+                    for c2 in canoes:
+                        if not any(cc in c2 for cc in c1):
+                            self.winner = score
+                            self.winning_canoes = [c1, c2]
+                            return True
         return False
 
     def is_valid_move(self, move):

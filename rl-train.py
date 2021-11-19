@@ -11,58 +11,8 @@ import encoders
 import utils
 import numpy as np
 from board import Player, GameState
+from experience import ExperienceBuffer, ExperienceCollector, combine_experience, load_experience
 
-class ExperienceBuffer:
-    def __init__(self, states, actions, rewards):
-        self.states = states
-        self.actions = actions
-        self.rewards = rewards
-
-    def serialize(self, h5file):
-        h5file.create_group('experience')
-        h5file['experience'].create_dataset('states', data=self.states)
-        h5file['experience'].create_dataset('actions', data=self.actions)
-        h5file['experience'].create_dataset('rewards', data=self.rewards)
-
-class ExperienceCollector(object):
-    def __init__(self):
-        self.states = []
-        self.actions = []
-        self.rewards = []
-        self._current_episode_states = []
-        self._current_episode_actions = []
-
-    def begin_episode(self):
-        self._current_episode_states = []
-        self._current_episode_actions = []
-
-    def record_decision(self, state, action):
-        self._current_episode_states.append(state)
-        self._current_episode_actions.append(action)
-
-    def complete_episode(self, reward):
-        num_states = len(self._current_episode_states)
-        self.states += self._current_episode_states
-        self.actions += self._current_episode_actions
-        self.rewards += [reward for _ in range(num_states)]
-
-        self._current_episode_states = []
-        self._current_episode_actions = []
-
-    def to_buffer(self):
-        return ExperienceBuffer(states = np.array(self.states), actions = np.array(self.actions), rewards = np.array(self.rewards))
-
-def combine_experience(collectors):
-    combined_states = np.concatenate([np.array(c.states) for c in collectors])
-    combined_actions = np.concatenate([np.array(c.actions) for c in collectors])
-    combined_rewards = np.concatenate([np.array(c.rewards) for c in collectors])
-    return ExperienceBuffer(combined_states, combined_actions, combined_rewards)
-
-def load_experience(h5file):
-    return ExperienceBuffer(
-        states = np.array(h5file['experience']['states']),
-        actions = np.array(h5file['experience']['actions']),
-        rewards = np.array(h5file['experience']['rewards']))
 
 def simulate_game(red_player, yellow_player):
     moves = []
@@ -78,6 +28,7 @@ def simulate_game(red_player, yellow_player):
         game = game.apply_move(next_move)
     game.print_board()
     print(game.winner)
+    print(game.winning_canoes)
     return game
 
 def main():
@@ -101,13 +52,13 @@ def main():
 
     agent1 = agent.PolicyAgent(utils.load_model(model_in_filename), encoders.OnePlaneEncoder())
     for exp_filename in experience_files:
-        exp_buffer = load_experience(h5py.File(exp_filename))
+        exp_buffer = load_experience(h5py.File("./generated_experience/" + exp_filename + ".h5"))
         agent1.train(exp_buffer, learning_rate=learning_rate, clipnorm=clipnorm, batch_size=batch_size)
 
     utils.save_model(agent1.model, model_out_filename)
 
     wins = { "RL": 0, "pre": 0, "ties": 0 }
-    agent2 = agent.PolicyAgent(utils.load_model(model_in_filename), encoders.OnePlaneEncoder())
+    agent2 = agent.PolicyAgent(utils.load_model("init"), encoders.OnePlaneEncoder())
     bots = {
         Player.red: agent1,
         Player.yellow: agent2,
