@@ -21,7 +21,7 @@ class RandomAgent(Agent):
         open_spaces = game.board.return_open_spaces()
         return Move.play(open_spaces[np.random.choice(len(open_spaces))])
 
-class GreedyAgent(Agent):
+class NeighborAgent(Agent):
     def __init__(self):
         pass
 
@@ -46,7 +46,7 @@ class GreedyAgent(Agent):
             open_spaces = game.board.return_open_spaces()
             return Move.play(open_spaces[np.random.choice(len(open_spaces))])
 
-class GreedyGreedyAgent(Agent):
+class GreedyAgent(Agent):
     def __init__(self):
         pass
 
@@ -78,7 +78,7 @@ class GreedyGreedyAgent(Agent):
     def find_winning_move(self, game):
         for candidate in game.board.return_open_spaces():
             next_state = game.apply_move(Move.play(candidate))
-            if next_state.is_over() and next_state.winner == next_state.next_player.other:
+            if next_state.is_over() and next_state.winner == next_state.current_player.other:
                 return candidate
         return None
     
@@ -109,7 +109,7 @@ class DeepLearningAgent(Agent):
         num_moves = self.encoder.board_width * self.encoder.board_height
         move_probs = self.predict(game_state)
         move_probs = move_probs ** 3
-        eps = 1e-6
+        eps = 1e-5
         move_probs = np.clip(move_probs, eps, 1-eps)
         move_probs = move_probs / np.sum(move_probs)
         candidates = np.arange(num_moves)
@@ -178,14 +178,6 @@ class IndexError(Exception):
     pass
 
 
-
-
-
-
-
-
-
-
 class QAgent(Agent):
     def __init__(self, model, encoder):
         self.model = model
@@ -230,13 +222,6 @@ class QAgent(Agent):
                 self.collector.record_decision(state=board_tensor, action=moves[move_idx])
             return Move.play(point)
 
-    def rank_moves_eps_greedy(self, values):
-        if np.random.random() < self.temperature:
-            values = np.random.random(values.shape)
-        # This ranks the moves from worst to best.
-        ranked_moves = np.argsort(values)
-        # Return them in best-to-worst order.
-        return ranked_moves[::-1]
 
     def train(self, experience, learning_rate=0.1, batch_size=128):
         opt = SGD(learning_rate=learning_rate)
@@ -253,6 +238,14 @@ class QAgent(Agent):
             y[i] = reward
         self.model.fit( [experience.states, actions], y, batch_size=batch_size, epochs=1)
 
+    def rank_moves_eps_greedy(self, values):
+        if np.random.random() < self.temperature:
+            values = np.random.random(values.shape)
+        # This ranks the moves from worst to best.
+        ranked_moves = np.argsort(values)
+        # Return them in best-to-worst order.
+        return ranked_moves[::-1]
+
     def serialize(self, h5file):
         raise NotImplementedError()
 
@@ -260,22 +253,60 @@ class QAgent(Agent):
         return {'value': self.last_move_value}
 
 
-def load_q_agent(h5file):
-    model = utils.load_model_from_hdf5_group(h5file['model'])
-    encoder_name = h5file['encoder'].attrs['name']
-    if not isinstance(encoder_name, str):
-        encoder_name = encoder_name.decode('ascii')
-    # board_width = h5file['encoder'].attrs['board_width']
-    # board_height = h5file['encoder'].attrs['board_height']
-    encoder = encoders.OnePlaneEncoder()
-    return QAgent(model, encoder)
+class ACAgent(Agent):
+    def __init__(self, model, encoder):
+        self.model = model
+        self.encoder = encoder
+        self.collector = None
+        self.last_state_value = 0
 
-def load_policy_agent(h5file):
-    model = utils.load_model_from_hdf5_group(h5file['model'], custom_objects={})
-    encoder_name = h5file['encoder'].attrs['name']
-    if not isinstance(encoder_name, str):
-        encoder_name = encoder_name.decode('ascii')
-    # board_width = h5file['encoder'].attrs['board_width']
-    # board_height = h5file['encoder'].attrs['board_height']
-    encoder = encoders.OnePlaneEncoder()
-    return PolicyAgent(model, encoder)
+    def set_collector(self, collector):
+        self.collector = collector
+
+    def select_move(self, game_state):
+        num_moves = self.encoder.board_width * self.encoder.board_height
+        board_tensor = self.encoder.encode(game_state)
+        X = np.array([board_tensor])
+
+        actions, values = self.model.predict(X)
+        move_probs = actions[0]
+        estimated_value = values[0][0]
+        self.last_state_value = float(estimated_value)
+
+        eps = 1e-6
+        move_probs = np.clip(move_probs, eps, 1 - eps)
+        move_probs = move_probs / np.sum(move_probs)
+
+        candidates = np.arange(num_moves)
+        ranked_moves = np.random.choice(candidates, num_moves, replace=False, p=move_probs)
+        for point_idx in ranked_moves:
+            point = self.encoder.decode_point_index(point_idx)
+            move = Move.play(point)
+            if game_state.is_valid_move(move):
+                if self.collector is not None:
+                    self.collector.record_decision(state=board_tensor, action=point_idx, estimated_value=estimated_value)
+                return move
+
+
+    def train(self, experience, learning_rate=0.1, batch_size=128):
+        opt = SGD(learning_rate=learning_rate, clipvalue=0.2)
+        self.model.compile(loss=['categorical_crossentropy', 'mse'], optimizer=opt) # , loss_weights=[1.0, 0.5]
+
+        n = experience.states.shape[0]
+        num_moves = self.encoder.num_points()
+        policy_target = np.zeros((n, num_moves))
+        value_target = np.zeros((n,))
+        for i in range(n):
+            action = experience.actions[i]
+            reward = experience.rewards[i]
+            policy_target[i][action] = experience.advantages[i]
+            value_target[i] = reward
+
+        self.model.fit(experience.states, [policy_target, value_target], batch_size=batch_size, epochs=1)
+
+    def serialize(self, h5file):
+        raise NotImplementedError()
+
+    def diagnostics(self):
+        return {'value': self.last_move_value}
+

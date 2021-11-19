@@ -12,6 +12,7 @@ import utils
 import numpy as np
 from board import Player, GameState
 from experience import ExperienceBuffer, ExperienceCollector, combine_experience, load_experience
+import time
 
 
 def simulate_game(red_player, yellow_player):
@@ -35,10 +36,9 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--model-in', required=True)
     parser.add_argument('--model-out', required=True)
-    parser.add_argument('--learning-rate', type=float, default=0.0001)
-    parser.add_argument('--clipnorm', type=float, default=1.0)
+    parser.add_argument('--learning-rate', type=float, default=0.002)
     parser.add_argument('--bs', type=int, default=512)
-    parser.add_argument('--benchmark-trials', type=int, default=100)
+    parser.add_argument('--benchmark-trials', type=int, default=150)
     parser.add_argument('experience', nargs='+')
 
     args = parser.parse_args()
@@ -47,18 +47,17 @@ def main():
     model_out_filename = args.model_out
     benchmark_trials = args.benchmark_trials
     learning_rate = args.learning_rate
-    clipnorm = args.clipnorm
     batch_size = args.bs
 
-    agent1 = agent.PolicyAgent(utils.load_model(model_in_filename), encoders.OnePlaneEncoder())
+    agent1 = agent.ACAgent(utils.load_model(model_in_filename), encoders.SixPlaneEncoder())
     for exp_filename in experience_files:
         exp_buffer = load_experience(h5py.File("./generated_experience/" + exp_filename + ".h5"))
-        agent1.train(exp_buffer, learning_rate=learning_rate, clipnorm=clipnorm, batch_size=batch_size)
+        agent1.train(exp_buffer, learning_rate=learning_rate, batch_size=batch_size)
 
     utils.save_model(agent1.model, model_out_filename)
 
     wins = { "RL": 0, "pre": 0, "ties": 0 }
-    agent2 = agent.PolicyAgent(utils.load_model("init"), encoders.OnePlaneEncoder())
+    agent2 = agent.ACAgent(utils.load_model("acinit"), encoders.SixPlaneEncoder())
     bots = {
         Player.red: agent1,
         Player.yellow: agent2,
@@ -67,7 +66,11 @@ def main():
     for trial in range(benchmark_trials):
         sys.stdout.write(f"Benchmark game {trial+1}/{benchmark_trials}\r")
         sys.stdout.flush()
-        game = GameState.new_game()
+        if trial < int(benchmark_trials / 2):
+            first_player = Player.red
+        else:
+            first_player = Player.yellow
+        game = GameState.new_game(first_player)
         while not game.is_over():
             bot_move = bots[game.current_player].select_move(game)
             game = game.apply_move(bot_move)
@@ -77,6 +80,13 @@ def main():
             wins['pre'] += 1
         else:
             wins['ties'] += 1
+        game.print_board()
+        print(game.winner)
+        print(game.winning_canoes)
+    
+    wins['RL'] = wins['RL'] / benchmark_trials
+    wins['pre'] = wins['pre'] / benchmark_trials
+    wins['ties'] = wins['ties'] / benchmark_trials
     print(f"\r\nBrenchmark: {wins}")
 
 

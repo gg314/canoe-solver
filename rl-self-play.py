@@ -23,7 +23,7 @@ def simulate_game(red_player, yellow_player):
     }
 
     while not game.is_over():
-        next_move = agents[game.next_player].select_move(game)
+        next_move = agents[game.current_player].select_move(game)
         moves.append(next_move)
         game = game.apply_move(next_move)
     game.print_board()

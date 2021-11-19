@@ -135,9 +135,9 @@ for idx in range(78):
 
 
 class GameState():
-    def __init__(self, board, next_player, previous, move):
+    def __init__(self, board, current_player, previous, move):
         self.board = board
-        self.next_player = next_player
+        self.current_player = current_player
         self.previous_state = previous
         self.last_move = move
         self.winner = None
@@ -151,8 +151,22 @@ class GameState():
     def apply_move(self, move):
         if move.is_play:
             next_board = copy.deepcopy(self.board)
-            next_board.place_peg(self.next_player, move.point)
-        return GameState(next_board, self.next_player.other, self, move)
+            next_board.place_peg(self.current_player, move.point)
+        return GameState(next_board, self.current_player.other, self, move)
+
+
+    def completes_canoe(self, pt, player):
+        if self.current_player == Player.red:
+            moves = self.board.reds
+        else:
+            moves = self.board.yellows
+        pt_idx = pt.to_idx()
+        for s in self.solns_dict[pt_idx]:
+            if all(moves[elem] for elem in s):
+                return True
+            else:
+                pass
+        return False
 
     # return 0 for tie, 1 for red win, -1 for yellow win, None for ongoing
     def is_over(self):
@@ -161,12 +175,12 @@ class GameState():
         if self.board.open_spaces <= 0:
             self.winner = 0
             return True
-        if self.next_player.other == Player.red: # ie current player = red
+        if self.current_player.other == Player.red: # apply_move just called by current_player.other
             moves = self.board.reds
-            score = self.next_player.other
+            winner = self.current_player.other
         else:
             moves = self.board.yellows
-            score = self.next_player.other
+            winner = self.current_player.other
         last_move_id = self.last_move.point.to_idx()
         for s in self.solns_dict[last_move_id]:
             if all(moves[elem] for elem in s):
@@ -183,10 +197,13 @@ class GameState():
                 for c1 in canoes:
                     for c2 in canoes:
                         if not any(cc in c2 for cc in c1):
-                            self.winner = score
+                            self.winner = winner
                             self.winning_canoes = [c1, c2]
                             return True
         return False
+
+    def legal_moves(self):
+        return [ Move.play(pt) for pt in self.board.return_open_spaces() ]
 
     def is_valid_move(self, move):
         if self.is_over():
@@ -194,9 +211,9 @@ class GameState():
         return self.board.get(move.point) is None and self.board.is_on_grid(move.point)
 
     @classmethod
-    def new_game(cls):
+    def new_game(cls, first_player = Player.red):
         board = Board()
-        return GameState(board, Player.red, None, None)
+        return GameState(board, first_player, None, None)
 
 def print_error(msg):
     print(f"\033[92m{msg}\033[0m")

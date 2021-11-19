@@ -1,5 +1,5 @@
 import argparse
-
+import sys
 import h5py
 
 from tensorflow import keras
@@ -36,21 +36,17 @@ def main():
     parser.add_argument('--model-in', required=True)
     parser.add_argument('--experience-out', required=True)
     parser.add_argument('--num-games', '-n', type=int, default=10)
-    parser.add_argument('--temperature', '-t', type=float, default=0.35)
     args = parser.parse_args()
     model_in_filename = args.model_in
     experience_filename = args.experience_out
     num_games = args.num_games
-    temperature = args.temperature
 
-    agent1 = agent.QAgent(utils.load_model(model_in_filename), encoders.OnePlaneEncoder())
-    agent2 = agent.QAgent(utils.load_model(model_in_filename), encoders.OnePlaneEncoder())
+    agent1 = agent.ACAgent(utils.load_model(model_in_filename), encoders.SixPlaneEncoder())
+    agent2 = agent.ACAgent(utils.load_model(model_in_filename), encoders.SixPlaneEncoder())
     collector1 = ExperienceCollector()
     collector2 = ExperienceCollector()
     agent1.set_collector(collector1)
     agent2.set_collector(collector2)
-    agent1.set_temperature(temperature)
-    agent2.set_temperature(temperature)
 
     for i in range(args.num_games):
         print(f"Simulating game {i + 1}/{num_games}...")

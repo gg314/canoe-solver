@@ -12,7 +12,7 @@ def generate_game(rounds=None, max_moves=100):
     boards, moves = [], []
     encoder = encoders.OnePlaneEncoder()
     game = GameState.new_game()
-    bot = agent.GreedyGreedyAgent()
+    bot = agent.GreedyAgent()
     num_moves = 0
 
     while not game.is_over():

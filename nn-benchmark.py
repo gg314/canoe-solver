@@ -19,7 +19,7 @@ def main():
     encoder = encoders.OnePlaneEncoder()
     bots = {
         Player.red: agent.DeepLearningAgent(model, encoder),
-        Player.yellow: agent.GreedyGreedyAgent(),
+        Player.yellow: agent.GreedyAgent(),
     }
     wins = { "bot1": 0, "bot2": 0, "ties": 0 }
 
@@ -28,11 +28,11 @@ def main():
 
         while not game.is_over():
            #  time.sleep(1)
-            if bots[game.next_player] == None:
+            if bots[game.current_player] == None:
                 print("HUMAN MOVE")
                 raise NotImplementedError()
             else:
-                bot_move = bots[game.next_player].select_move(game)
+                bot_move = bots[game.current_player].select_move(game)
                 game = game.apply_move(bot_move)
             # game.print_board()
 
