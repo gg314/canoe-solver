@@ -31,7 +31,7 @@ This learning-project draws heavily from *Deep Learning and the Game of Go* (Man
 ## ML bot comparison
 
 - **Epoch 0**: untrained (random move) bot
-- **Epoch 1**: actor-critic bot trained with 2100 self-play games using Epoch 0, learning_rate=0.01
+- **Epoch 1**: actor-critic bot trained with 3000 self-play games using Epoch 0, learning_rate=0.005
 - **Epoch 2**: lr = 0.00005
 - ...
 - **Epoch n**: actor-critic bot trained with *n* iterations of 4500 self-play games (each Epoch n-1)
@@ -39,7 +39,7 @@ This learning-project draws heavily from *Deep Learning and the Game of Go* (Man
 |Bot 1 | Bot 2 | Ties |
 | --- | --- | --- |
 | Epoch 1 | Epoch 0 | |
-| .636 | .364 | .000 |
+| .630 | .360 | .010 |
 | Epoch 2 | Epoch 1 | |
 | .710 | .280 | .010 |
 | Epoch 3 | Epoch 2 | |
