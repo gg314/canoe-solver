@@ -77,9 +77,9 @@ class SixPlaneEncoder(Encoder):
         board_tensor = np.zeros(self.shape())
         current_player = game_state.current_player
         if current_player == Player.red:
-            board_tensor[4] = 1
+            board_tensor[:, :, 4] = 1
         else:
-            board_tensor[5] = 1
+            board_tensor[:, :, 5] = 1
 
         for r in range(self.board_height):
             for c in range(self.board_width):

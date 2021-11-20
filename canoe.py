@@ -14,26 +14,30 @@ def main():
     random_agent1 = agent.RandomAgent()
     neighbor_agent1 = agent.NeighborAgent()
     greedy_agent1 = agent.GreedyAgent()
-    ac_agent1 = agent.ACAgent(utils.load_model("actrained1"), encoders.OnePlaneEncoder())
+    q_agent1 = agent.QAgent(utils.load_model("qtrained1"), encoders.OnePlaneEncoder())
+    ac_agent1 = agent.ACAgent(utils.load_model("ac-trained2"), encoders.SixPlaneEncoder())
+    ac_agent2 = agent.ACAgent(utils.load_model("acinit"), encoders.SixPlaneEncoder())
+    human = agent.Human()
 
     wins = { "bot1": 0, "bot2": 0, "ties": 0 }
     bots = {
         Player.red: ac_agent1,
-        Player.yellow: random_agent1
+        Player.yellow: human
     }
 
-    benchmark_trials = 200
+    benchmark_trials = 500
     for trial in range(benchmark_trials):
-        if trial < int(benchmark_trials / 2):
+        if (trial % 2):
             first_player = Player.red
         else:
             first_player = Player.yellow 
         game = GameState.new_game(first_player)
 
         while not game.is_over():
+            game.print_board()
             bot_move = bots[game.current_player].select_move(game)
             game = game.apply_move(bot_move)
-            # game.print_board()
+        game.print_board()
         
         # print(chr(27) + "[2J")
         print(f"Game {trial + 1} winner: {game.winner}")

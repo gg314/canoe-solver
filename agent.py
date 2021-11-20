@@ -1,5 +1,5 @@
 import numpy as np
-from board import Move, Point
+from board import Move, Point, Player
 import sys
 import utils
 import encoders
@@ -12,6 +12,28 @@ class Agent:
     def select_move(self, game_state):
         raise NotImplementedError()
 
+class Human(Agent):
+    def __init__(self):
+        self.encoder_test = encoders.SixPlaneEncoder()
+
+    def select_move(self, game):
+        open_spaces = game.board.return_open_spaces()
+        while True:
+            human_input = input("Select an index: ")
+            try:
+                human_input = int(human_input)
+                r = human_input // game.board.num_cols
+                c = human_input % game.board.num_cols
+                pt = Point(row = r+1, col = c+1)
+                if pt in open_spaces:
+                    return Move.play(pt)
+                else:
+                    print("Error. Try again.")
+            except:
+                board_tensor = self.encoder_test.encode(game)
+                print(board_tensor)
+
+        
 class RandomAgent(Agent):
     def __init__(self):
         pass
@@ -20,6 +42,7 @@ class RandomAgent(Agent):
         previous_move = game.last_move
         open_spaces = game.board.return_open_spaces()
         return Move.play(open_spaces[np.random.choice(len(open_spaces))])
+
 
 class NeighborAgent(Agent):
     def __init__(self):
@@ -290,7 +313,7 @@ class ACAgent(Agent):
 
     def train(self, experience, learning_rate=0.1, batch_size=128):
         opt = SGD(learning_rate=learning_rate, clipvalue=0.2)
-        self.model.compile(loss=['categorical_crossentropy', 'mse'], optimizer=opt) # , loss_weights=[1.0, 0.5]
+        self.model.compile(loss=['categorical_crossentropy', 'mse'], loss_weights=[1.0, 0.2], optimizer=opt) # , loss_weights=[1.0, 0.5]
 
         n = experience.states.shape[0]
         num_moves = self.encoder.num_points()

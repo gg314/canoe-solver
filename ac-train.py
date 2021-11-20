@@ -36,9 +36,9 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--model-in', required=True)
     parser.add_argument('--model-out', required=True)
-    parser.add_argument('--learning-rate', type=float, default=0.002)
+    parser.add_argument('--learning-rate', type=float, default=0.01)
     parser.add_argument('--bs', type=int, default=512)
-    parser.add_argument('--benchmark-trials', type=int, default=150)
+    parser.add_argument('--benchmark-trials', type=int, default=100)
     parser.add_argument('experience', nargs='+')
 
     args = parser.parse_args()
@@ -57,7 +57,7 @@ def main():
     utils.save_model(agent1.model, model_out_filename)
 
     wins = { "RL": 0, "pre": 0, "ties": 0 }
-    agent2 = agent.ACAgent(utils.load_model("acinit"), encoders.SixPlaneEncoder())
+    agent2 = agent.ACAgent(utils.load_model(model_in_filename), encoders.SixPlaneEncoder())
     bots = {
         Player.red: agent1,
         Player.yellow: agent2,
@@ -66,7 +66,7 @@ def main():
     for trial in range(benchmark_trials):
         sys.stdout.write(f"Benchmark game {trial+1}/{benchmark_trials}\r")
         sys.stdout.flush()
-        if trial < int(benchmark_trials / 2):
+        if (trial % 2):
             first_player = Player.red
         else:
             first_player = Player.yellow
@@ -81,7 +81,7 @@ def main():
         else:
             wins['ties'] += 1
         game.print_board()
-        print(game.winner)
+        print(f"{game.winner} ({(100 * wins['RL'] / (trial + 1)):.1f}%)")
         print(game.winning_canoes)
     
     wins['RL'] = wins['RL'] / benchmark_trials

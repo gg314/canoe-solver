@@ -111,27 +111,28 @@ solns = []
 print("MAKING SOLNS")
 for r in range(1, b.num_rows): # \__/
     for c in range(1, b.num_cols - 2):
-        if None not in (b.is_on_grid(Point(r, c)), b.is_on_grid(Point(r, c+3)), b.is_on_grid(Point(r+1, c+1)), b.is_on_grid(Point(r+1, c+2))):
+        if False not in (b.is_on_grid(Point(r, c)), b.is_on_grid(Point(r, c+3)), b.is_on_grid(Point(r+1, c+1)), b.is_on_grid(Point(r+1, c+2))):
             solns.append( (Point(r, c).to_idx(), Point(r, c+3).to_idx(), Point(r+1, c+1).to_idx(), Point(r+1, c+2).to_idx() ) )
 for r in range(1, b.num_rows): # /~~\
     for c in range(1, b.num_cols - 2):
-        if None not in ( b.is_on_grid(Point(r, c+1)),  b.is_on_grid(Point(r, c+2)),  b.is_on_grid(Point(r+1, c)),  b.is_on_grid(Point(r+1, c+3))):
+        if False not in ( b.is_on_grid(Point(r, c+1)),  b.is_on_grid(Point(r, c+2)),  b.is_on_grid(Point(r+1, c)),  b.is_on_grid(Point(r+1, c+3))):
             solns.append( ( Point(r, c+1).to_idx(),  Point(r, c+2).to_idx(),  Point(r+1, c).to_idx(),  Point(r+1, c+3).to_idx()) )
 for r in range(1, b.num_rows - 2): # (
     for c in range(1, b.num_cols):
-        if None not in (b.is_on_grid(Point(r, c+1)), b.is_on_grid(Point(r+1, c)), b.is_on_grid(Point(r+2, c)), b.is_on_grid(Point(r+3, c+1))):
+        if False not in (b.is_on_grid(Point(r, c+1)), b.is_on_grid(Point(r+1, c)), b.is_on_grid(Point(r+2, c)), b.is_on_grid(Point(r+3, c+1))):
             solns.append( (Point(r, c+1).to_idx(), Point(r+1, c).to_idx(), Point(r+2, c).to_idx(), Point(r+3, c+1).to_idx()) )
 for r in range(1, b.num_rows - 2): # )
     for c in range(1, b.num_cols):
-        if None not in (b.is_on_grid(Point(r, c)), b.is_on_grid(Point(r+1, c+1)), b.is_on_grid(Point(r+2, c+1)), b.is_on_grid(Point(r+3, c))):
+        if False not in (b.is_on_grid(Point(r, c)), b.is_on_grid(Point(r+1, c+1)), b.is_on_grid(Point(r+2, c+1)), b.is_on_grid(Point(r+3, c))):
             solns.append( (Point(r, c).to_idx(), Point(r+1, c+1).to_idx(), Point(r+2, c+1).to_idx(), Point(r+3, c).to_idx()) )
 
 solns_dict = {}
 for idx in range(78):
     solns_dict[idx] = []
-    for s in solns:
-        if idx in s:
-            solns_dict[idx].append(s)
+    for soln in solns:
+        if idx in soln:
+            tuple3 = tuple([el for el in soln if el != idx])
+            solns_dict[idx].append(tuple3)
 
 
 class GameState():
@@ -156,7 +157,7 @@ class GameState():
 
 
     def completes_canoe(self, pt, player):
-        if self.current_player == Player.red:
+        if player == Player.red:
             moves = self.board.reds
         else:
             moves = self.board.yellows
