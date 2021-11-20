@@ -13,12 +13,11 @@ This learning-project draws heavily from *Deep Learning and the Game of Go* (Man
 5. Actor-critic learning (`ac-`)
     * Directly learn both a policy function (i.e. which move to make) and a value function (weighting the importance of each move)
 
-## Bot comparison
+## Classical bot comparison (win rates)
 
 - **Random**: choose from any open space
 - **Neighbor**: choose adjacent to opponent's previous move
 - **Greedy**: take any move that wins, avoid any move that allows immediately loss, else choose adjacent to opponent (note: does not automatically *block* winning canoes)
-
 
 |Bot 1 | Bot 2 | Ties |
 | --- | --- | --- |
@@ -28,3 +27,26 @@ This learning-project draws heavily from *Deep Learning and the Game of Go* (Man
 | .824 | .146 | .030 |
 | Greedy | Neighbor | |
 | .710 | .152 | .138 |
+
+## ML bot comparison
+
+- **Epoch 0**: untrained (random move) bot
+- **Epoch 1**: actor-critic bot trained with 2100 self-play games using Epoch 0, learning_rate=0.01
+- **Epoch 2**: lr = 0.00005
+- ...
+- **Epoch n**: actor-critic bot trained with *n* iterations of 4500 self-play games (each Epoch n-1)
+
+|Bot 1 | Bot 2 | Ties |
+| --- | --- | --- |
+| Epoch 1 | Epoch 0 | |
+| .636 | .364 | .000 |
+| Epoch 2 | Epoch 1 | |
+| .710 | .280 | .010 |
+| Epoch 3 | Epoch 2 | |
+| ... | ... | ... |
+| Epoch 3 | Epoch 0 | |
+| - | - | - |
+| Epoch 10 | Epoch 0 | |
+| - | - | - |
+| Epoch 10 | Greedy | |
+| - | - | - |
