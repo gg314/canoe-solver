@@ -15,8 +15,8 @@ def main():
     neighbor_agent1 = agent.NeighborAgent()
     greedy_agent1 = agent.GreedyAgent()
     q_agent1 = agent.QAgent(utils.load_model("qtrained1"), encoders.OnePlaneEncoder())
-    ac_agent1 = agent.ACAgent(utils.load_model("ac-trained2"), encoders.SixPlaneEncoder())
-    ac_agent2 = agent.ACAgent(utils.load_model("acinit"), encoders.SixPlaneEncoder())
+    ac_agent1 = agent.ACAgent(utils.load_model("ac-2"), encoders.RelativeEncoder())
+    ac_agent2 = agent.ACAgent(utils.load_model("ac-init"), encoders.RelativeEncoder())
     human = agent.Human()
 
     wins = { "bot1": 0, "bot2": 0, "ties": 0 }
@@ -37,6 +37,7 @@ def main():
             game.print_board()
             bot_move = bots[game.current_player].select_move(game)
             game = game.apply_move(bot_move)
+            time.sleep(1)
         game.print_board()
         
         # print(chr(27) + "[2J")

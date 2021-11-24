@@ -41,8 +41,8 @@ def main():
     experience_filename = args.experience_out
     num_games = args.num_games
 
-    agent1 = agent.ACAgent(utils.load_model(model_in_filename), encoders.SixPlaneEncoder())
-    agent2 = agent.ACAgent(utils.load_model(model_in_filename), encoders.SixPlaneEncoder())
+    agent1 = agent.ACAgent(utils.load_model(model_in_filename), encoders.RelativeEncoder())
+    agent2 = agent.ACAgent(utils.load_model(model_in_filename), encoders.RelativeEncoder())
     collector1 = ExperienceCollector()
     collector2 = ExperienceCollector()
     agent1.set_collector(collector1)

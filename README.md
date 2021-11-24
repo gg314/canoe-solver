@@ -32,21 +32,48 @@ This learning-project draws heavily from *Deep Learning and the Game of Go* (Man
 
 - **Epoch 0**: untrained (random move) bot
 - **Epoch 1**: actor-critic bot trained with 3000 self-play games using Epoch 0, learning_rate=0.005
-- **Epoch 2**: lr = 0.00005
+- **Epoch 2**: lr = 0.001
+- **Epoch 3**: switched to adadelta, 9000 trials
+- **Epoch 4**: try 50,000 trials
 - ...
 - **Epoch n**: actor-critic bot trained with *n* iterations of 4500 self-play games (each Epoch n-1)
 
 |Bot 1 | Bot 2 | Ties |
 | --- | --- | --- |
 | Epoch 1 | Epoch 0 | |
-| .630 | .360 | .010 |
+| .63 | .36 | .01 |
 | Epoch 2 | Epoch 1 | |
-| .710 | .280 | .010 |
+| .64 | .35 | .01 |
 | Epoch 3 | Epoch 2 | |
-| ... | ... | ... |
-| Epoch 3 | Epoch 0 | |
-| - | - | - |
+| .70 | .29 | .01 |
+| Epoch 4 | Epoch 3 | |
+| .66 | .33 | .01 |
 | Epoch 10 | Epoch 0 | |
 | - | - | - |
 | Epoch 10 | Greedy | |
 | - | - | - |
+
+
+Additionally:
+|Bot 1 | Bot 2 | Ties |
+| --- | --- | --- |
+| Epoch 3 | Random | |
+| .838 | .156 | .006 |
+
+# Second attempt
+
+|Bot 1 | Bot 2 | Ties |
+| --- | --- | --- |
+| Epoch 1 | Epoch 0 | |
+| .63 | .36 | .01 |
+| Epoch 2 | Epoch 1 | |
+| .64 | .35 | .01 |
+| Epoch 3 | Epoch 2 | |
+| .70 | .29 | .01 |
+| Epoch 4 | Epoch 3 | |
+| .66 | .33 | .01 |
+| Epoch 10 | Epoch 0 | |
+| - | - | - |
+| Epoch 10 | Greedy | |
+| - | - | - |
+

@@ -9,10 +9,10 @@ import utils
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('output_file', default="qinit")
+    parser.add_argument('output_file', default="model-init")
     args = parser.parse_args()
     output_file = args.output_file
-    encoder = encoders.SixPlaneEncoder()
+    encoder = encoders.RelativeEncoder()
 
     board_input = Input(shape=encoder.shape(), name='board_input')
 

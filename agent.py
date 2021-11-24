@@ -14,7 +14,7 @@ class Agent:
 
 class Human(Agent):
     def __init__(self):
-        self.encoder_test = encoders.SixPlaneEncoder()
+        self.encoder_test = encoders.RelativeEncoder()
 
     def select_move(self, game):
         open_spaces = game.board.return_open_spaces()
@@ -281,7 +281,7 @@ class ACAgent(Agent):
         self.model = model
         self.encoder = encoder
         self.collector = None
-        self.last_state_value = 0
+        # self.last_state_value = 0
 
     def set_collector(self, collector):
         self.collector = collector
@@ -294,9 +294,14 @@ class ACAgent(Agent):
         actions, values = self.model.predict(X)
         move_probs = actions[0]
         estimated_value = values[0][0]
-        self.last_state_value = float(estimated_value)
+        # self.last_state_value = float(estimated_value)
 
-        eps = 1e-6
+        # for rr in range(6):
+        #     for cc in range(13):
+        #         print(f"{move_probs[13*rr + cc]:.3f} ", end="")
+        #     print(" ")
+
+        eps = 1e-5
         move_probs = np.clip(move_probs, eps, 1 - eps)
         move_probs = move_probs / np.sum(move_probs)
 
@@ -313,7 +318,7 @@ class ACAgent(Agent):
 
     def train(self, experience, learning_rate=0.1, batch_size=128):
         opt = SGD(learning_rate=learning_rate, clipvalue=0.2)
-        self.model.compile(loss=['categorical_crossentropy', 'mse'], loss_weights=[1.0, 0.2], optimizer=opt) # , loss_weights=[1.0, 0.5]
+        self.model.compile(loss=['categorical_crossentropy', 'mse'], loss_weights=[1.0, 0.5], optimizer='adadelta') # , loss_weights=[1.0, 0.5]
 
         n = experience.states.shape[0]
         num_moves = self.encoder.num_points()

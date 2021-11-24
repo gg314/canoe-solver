@@ -49,15 +49,18 @@ def main():
     learning_rate = args.learning_rate
     batch_size = args.bs
 
-    agent1 = agent.ACAgent(utils.load_model(model_in_filename), encoders.SixPlaneEncoder())
+    agent1 = agent.ACAgent(utils.load_model(model_in_filename), encoders.RelativeEncoder())
+    buffers = []
     for exp_filename in experience_files:
         exp_buffer = load_experience(h5py.File("./generated_experience/" + exp_filename + ".h5"))
-        agent1.train(exp_buffer, learning_rate=learning_rate, batch_size=batch_size)
+        buffers.append(exp_buffer)
+    all_experience = combine_experience(buffers)
+    agent1.train(all_experience, learning_rate=learning_rate, batch_size=batch_size)
 
     utils.save_model(agent1.model, model_out_filename)
 
     wins = { "RL": 0, "pre": 0, "ties": 0 }
-    agent2 = agent.ACAgent(utils.load_model(model_in_filename), encoders.SixPlaneEncoder())
+    agent2 = agent.ACAgent(utils.load_model(model_in_filename), encoders.RelativeEncoder())
     bots = {
         Player.red: agent1,
         Player.yellow: agent2,
