@@ -1,8 +1,8 @@
 ## Statement
-This learning-project draws heavily from *Deep Learning and the Game of Go* (Manning, 2019), adapted to Dale Walton's abstract strategy game *Canoe* ([BGG page](https://boardgamegeek.com/boardgame/10571/canoe), [Elm implementation](https://github.com/bored-games/canoe-game)). The goal is to use reinforcement learning through self-play to improve a Canoe bot that starts with basically no knowledge of the rules.
+This learning-project draws heavily from *Deep Learning and the Game of Go* (Manning, 2019), adapted to Dale Walton's abstract strategy game *Canoe* ([BGG page](https://boardgamegeek.com/boardgame/10571/canoe), [Elm implementation](https://github.com/bored-games/canoe-game)). The goal is to use convolutional neural nets and reinforcement learning through self-play to improve a Canoe bot that starts with basically no knowledge of the rules.
 
 ## Current status
-On hold. After 4 iterations, the actor-critic bot beats the random bot about 85% of the time. However, it is still trivial for a human to win against the bot. Further progression would take many more iterations, and AWS refused my request to pay for a GPU. The free tier CPU-based machine is slower than my desktop, which takes hours for each set of self-play games.
+On hold. After 4 iterations, the actor-critic bot beats the random bot about 85% of the time. However, it is still trivial for a human to win against the bot. Further progression would take many more iterations, and AWS refused my request to pay for a GPU. The free tier CPU-based machine is slower than my desktop, which takes hours for each set of self-play games (limited by `keras.predict()`).
 
 ## Steps and strategies
 1. Implement logic
@@ -64,7 +64,7 @@ Benchmarks:
 | Epoch 3 | Random | |
 | .838 | .156 | .006 |
 
-## The model
+## The encoding model
 AlphaGo uses some 48 feature planes. Here we use 6 arrays, each 6-by-13:
 
 | Plane Description |
