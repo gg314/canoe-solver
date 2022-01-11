@@ -18,8 +18,8 @@ On hold. After 4 iterations, the actor-critic bot beats the random bot about 85%
 
 ## To run
 1. `python ac-init-agent.py <model-output-file>`
-2. `python ac-self-play.py <model-input-file> <data-output-file> --num-games 5000`
-3. `python ac-train.py <model-input-file> <model-output-file> <data-input-file(s)>`
+2. `python ac-self-play.py --model-in <model-input-file> --experience-out <data-output-file> --num-games 5000`
+3. `python ac-train.py --model-in <model-input-file> --model-out <model-output-file> <data-input-file(s)>`
 4. Repeat steps 2 & 3, evaluating progress
 
 
@@ -37,35 +37,54 @@ On hold. After 4 iterations, the actor-critic bot beats the random bot about 85%
 | Greedy | Neighbor | |
 | .710 | .152 | .138 |
 
-## ML bot comparison
+## actor-critic bot comparison
 
+Each bot is trained from the previous epoch self-play games.
 - **Epoch 0**: untrained (random move) bot
-- **Epoch 1**: actor-critic bot trained with 3000 self-play games using Epoch 0, SGD learning_rate=0.005
-- **Epoch 2**: SGD learning_rate decreased to 0.001
-- **Epoch 3**: switched optimizer to adadelta, 9000 trials
-- **Epoch 4**: Use 50,000 trials
+- **Epoch 1**: 10000 games, Adam(learning_rate=0.00000500, beta_1=0.90, beta_2=0.999, clipvalue=0.1), weights: (1.0, 1.0)
+- **Epoch 2**: 10000 games, Adam(learning_rate=0.00000100, beta_1=0.90, beta_2=0.999, clipvalue=0.1), weights: (0.1, 1.0)
+- **Epoch 3**: 10000 games, Adam(learning_rate=0.00000002, beta_1=0.90, beta_2=0.999, clipvalue=0.1), weights: (1.0, 1.0)
+- **Epoch 4**: 0 games, Adam(learning_rate=0.0000008, beta_1=0.90, beta_2=0.999, clipvalue=0.1), weights: (1.0, 1.0)
+- **Epoch 5**: 0 games, Adam(learning_rate=0.0000008, beta_1=0.90, beta_2=0.999, clipvalue=0.1), weights: (1.0, 1.0)
+- **Epoch 6**: 0 games, Adam(learning_rate=0.0000008, beta_1=0.90, beta_2=0.999, clipvalue=0.1), weights: (1.0, 1.0)
+- **Epoch 7**: 0 games, Adam(learning_rate=0.0000008, beta_1=0.90, beta_2=0.999, clipvalue=0.1), weights: (1.0, 1.0)
+- **Epoch 8**: 0 games, Adam(learning_rate=0.0000008, beta_1=0.90, beta_2=0.999, clipvalue=0.1), weights: (1.0, 1.0)
+- **Epoch 9**: 0 games, Adam(learning_rate=0.0000008, beta_1=0.90, beta_2=0.999, clipvalue=0.1), weights: (1.0, 1.0)
+- **Epoch 10-19**: 0 games, Adam(learning_rate=0.0000008, beta_1=0.90, beta_2=0.999, clipvalue=0.1), weights: (1.0, 1.0)
+- **Epoch 20-26**: 0 games, Adam(learning_rate=0.0000008, beta_1=0.90, beta_2=0.999, clipvalue=0.1), weights: (1.0, 1.0)
+- **Epoch 27-29**: 0 games, Adam(learning_rate=0.0000008, beta_1=0.90, beta_2=0.999, clipvalue=0.1), weights: (1.0, 1.0)
+- **Epoch 13**: 0 games, Adam(learning_rate=0.00, beta_1=0.9, beta_2=0.999, clipvalue=0.11), weights: (1.0, 1.0)
+- **Epoch 14**: 0 games, Adamx, weights: (0.00, 1.0)
 - ...
 
-|Bot 1 | Bot 2 | Ties |
+| Epoch |Wins | Losses | Ties |
 | --- | --- | --- |
-| Epoch 1 | Epoch 0 | |
-| .63 | .36 | .01 |
-| Epoch 2 | Epoch 1 | |
-| .64 | .35 | .01 |
-| Epoch 3 | Epoch 2 | |
-| .70 | .29 | .01 |
-| Epoch 4 | Epoch 3 | |
-| .66 | .33 | .01 |
-| ... | Epoch 0 | |
+|  1 | .712 | .286 | .002 |
+|  2 | .602 | .390 | .008 |
+|  3 | .000 | .000 | .000 |
+|  4 | .000 | .000 | .000 |
+|  5 | .000 | .000 | .000 |
+|  6 | .000 | .000 | .000 |
+|  7 | .000 | .000 | .000 |
+|  8 | .000 | .000 | .000 |
+|  9 | .000 | .000 | .000 |
+| 10 | .000 | .000 | .000 |
+
+// For random moves, first player wins 53.1% of time.
+// Bot 11 wins 53.7% when doing first, bot 12 wins 53.1% when doing first
 
 Benchmarks:
 |Bot 1 | Bot 2 | Ties |
 | --- | --- | --- |
-| Epoch 3 | Random | |
-| .838 | .156 | .006 |
+| Epoch 8 | Random | |
+| .000 | .000 | .000 |
+| Epoch 9 | Random | |
+| .000 | .000 | .000 |
+| Epoch 10 | Random | |
+| .000 | .000 | .000 |
 
 ## The encoding model
-AlphaGo uses some 48 feature planes. Here we use 6 arrays, each 6-by-13:
+AlphaGo uses some 48 feature planes. Here we use 8 arrays, each 6-by-13:
 
 | Plane Description |
 | --- |
@@ -75,3 +94,6 @@ AlphaGo uses some 48 feature planes. Here we use 6 arrays, each 6-by-13:
 | 1 if spot is legal, open |
 | 1 if spot completes current player canoe |
 | 1 if spot completes oppoonent canoe |
+| 1 if spot is in current_player canoe |
+| 1 if spot is in oppoonent canoe |
+potential new planes: wins the game for self/opponent;
