@@ -1,8 +1,8 @@
 ## Statement
-This learning-project draws heavily from *Deep Learning and the Game of Go* (Manning, 2019), adapted to Dale Walton's abstract strategy game *Canoe* ([BGG page](https://boardgamegeek.com/boardgame/10571/canoe), [Elm implementation](https://github.com/bored-games/canoe-game)). The goal is to use convolutional neural nets and reinforcement learning through self-play to improve a Canoe bot that starts with basically no knowledge of the rules.
+This learning-project draws heavily from *Deep Learning and the Game of Go* (Manning, 2019), adapted to Dale Walton's abstract strategy game *Canoe* ([BGG page](https://boardgamegeek.com/boardgame/10571/canoe), [Elm implementation](https://github.com/bored-games/canoe-game)). The goal is to use convolutional neural nets and reinforcement learning through self-play to improve a Canoe bot that starts with basically no knowledge of the game.
 
 ## Current status
-On hold. After 4 iterations, the actor-critic bot beats the random bot about 85% of the time. However, it is still trivial for a human to win against the bot. Further progression would take many more iterations, and AWS refused my request to pay for a GPU. The free tier CPU-based machine is slower than my desktop, which takes hours for each set of self-play games (limited by `keras.predict()`).
+Learning has stalled. After several iterations, the actor-critic bot beats the random bot about 90% of the time. However, it is still trivial for a human to win against the bot. Further progression would take many more iterations, and AWS refused my request to pay for a GPU. Many paths forward, including: try to solve the case where a single canoe works, or embrace AlphaZero's Monte-Carlo rollouts and tree search.
 
 ## Steps and strategies
 1. Implement logic
@@ -57,21 +57,8 @@ Each bot is trained from the previous epoch self-play games.
 - **Epoch 14**: 0 games, Adamx, weights: (0.00, 1.0)
 - ...
 
-| Epoch |Wins | Losses | Ties |
-| --- | --- | --- |
-|  1 | .712 | .286 | .002 |
-|  2 | .602 | .390 | .008 |
-|  3 | .000 | .000 | .000 |
-|  4 | .000 | .000 | .000 |
-|  5 | .000 | .000 | .000 |
-|  6 | .000 | .000 | .000 |
-|  7 | .000 | .000 | .000 |
-|  8 | .000 | .000 | .000 |
-|  9 | .000 | .000 | .000 |
-| 10 | .000 | .000 | .000 |
-
-// For random moves, first player wins 53.1% of time.
-// Bot 11 wins 53.7% when doing first, bot 12 wins 53.1% when doing first
+For random moves, first player wins 53.1% of time.
+// Bot 11 wins 53.7% when doing first, bot 12 wins 53.1% when going first
 
 Benchmarks:
 |Bot 1 | Bot 2 | Ties |
