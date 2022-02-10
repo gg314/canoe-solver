@@ -38,7 +38,7 @@ def main():
         "--learning-rate", type=float, default=0.00000005
     )  # 00000005 # 000000006 = 50%
     parser.add_argument("--bs", type=int, default=2048)
-    parser.add_argument("--benchmark-trials", type=int, default=500)
+    parser.add_argument("--trials", type=int, default=500)
     parser.add_argument(
         "-g",
         "--generator",
@@ -52,7 +52,7 @@ def main():
     model_in_filename = "ac-v" + str(args.model_in)
     experience_files = args.experience
     model_out_filename = "ac-v" + str(int(args.model_in) + 1)  # args.model_out
-    benchmark_trials = args.benchmark_trials
+    trials = args.trials
     learning_rate = args.learning_rate
     batch_size = args.bs
 
@@ -88,43 +88,46 @@ def main():
 
     utils.save_model(agent1.model, model_out_filename)
 
-    wins = {"RL": 0, "pre": 0, "ties": 0}
+    wins = {"new": 0, "old": 0, "ties": 0}
     agent2 = agent.ACAgent(
         utils.load_model(model_in_filename), encoders.ExperimentalEncoder()
     )
-    bots = {
-        Player.red: agent1,
-        Player.yellow: agent2,
-    }
 
-    for trial in range(benchmark_trials):
+    total_moves = 0
+    for trial in range(trials):
         if trial % 2:
-            first_player = Player.red
+            bots = {
+                Player.red: agent1,
+                Player.yellow: agent2,
+            }
+            bots_r = {"new": Player.red, "old": Player.yellow}
         else:
-            first_player = Player.yellow
-        game = GameState.new_game(first_player)
+            bots = {
+                Player.yellow: agent1,
+                Player.red: agent2,
+            }
+            bots_r = {"new": Player.yellow, "old": Player.red}
+        game = GameState.new_game()
         while not game.is_over():
             bot_move = bots[game.current_player].select_move(game)
             game = game.apply_move(bot_move)
-        if game.winner == Player.red:
-            wins["RL"] += 1
-        elif game.winner == Player.yellow:
-            wins["pre"] += 1
+            total_moves += 1
+        if game.winner == bots_r["new"]:
+            wins["new"] += 1
+        elif game.winner == bots_r["old"]:
+            wins["old"] += 1
         else:
             wins["ties"] += 1
-        # game.print_board()
         if not args.mute:
-            make_progress_bar(wins["RL"], trial + 1, benchmark_trials, game.winner)
+            make_progress_bar(wins["new"], trial + 1, trials, game.winner)
 
-    k = int(wins["RL"])
-    wins["RL"] = wins["RL"] / benchmark_trials
-    wins["pre"] = wins["pre"] / benchmark_trials
-    wins["ties"] = wins["ties"] / benchmark_trials
+    k = int(wins["new"])
+    wins["new"] = wins["new"] / trials
+    wins["old"] = wins["old"] / trials
+    wins["ties"] = wins["ties"] / trials
     print(f"\r\nBrenchmark: {wins}")
-    p_val = np.sum(
-        [binom.pmf(k, benchmark_trials, 0.5) for k in range(k, benchmark_trials + 1)]
-    )
-    print(f"p = {p_val:.3}")
+    p_val = np.sum([binom.pmf(k, trials, 0.5) for k in range(k, trials + 1)])
+    print(f"p = {p_val:.3}, average moves = {total_moves / (2 * trials)}")
 
 
 if __name__ == "__main__":

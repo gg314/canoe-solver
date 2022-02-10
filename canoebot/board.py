@@ -80,7 +80,7 @@ class Board:
                 pt = Point(r, c)
                 symbol = "□"
                 if winning_canoes is not None:
-                    if counter in winning_canoes[0] or counter in winning_canoes[1]:
+                    if any(counter in wc for wc in winning_canoes):
                         symbol = "■"
                 if not self.is_on_grid(pt):
                     print("  ", end=" ")
@@ -295,10 +295,9 @@ class GameState:
         if self.current_player.other == Player.red:
             # apply_move just called by current_player.other
             moves = self.board.reds
-            winner = self.current_player.other
         else:
             moves = self.board.yellows
-            winner = self.current_player.other
+        winner = self.current_player.other
         last_move_id = self.last_move.point.to_idx()
         for s in self.solns_dict[last_move_id]:
             if all(moves[elem] for elem in s):
