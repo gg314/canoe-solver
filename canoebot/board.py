@@ -2,11 +2,11 @@
 board.py: logic for Canoe
 """
 
-import copy
 import enum
 from collections import namedtuple
-from typing import List, Optional
+
 import numpy as np
+from typing_extensions import Self
 
 __all__ = ["Board", "GameState", "Move"]
 
@@ -32,7 +32,7 @@ class Move:
     """Encode a potential move. Left generic in case passing were an option"""
 
     # optional expansions: resigning, draws etc.
-    def __init__(self, point):
+    def __init__(self, point: Point):
         assert point is not None
         self.point = point
         self.is_play = self.point is not None
@@ -66,6 +66,9 @@ class Board:
         self.num_cols = 13
         self.reds = np.zeros(78, dtype=bool)
         self.yellows = np.zeros(78, dtype=bool)
+        self.legal_spaces = np.ones(78, dtype=bool)
+        for i in (0, 3, 4, 5, 6, 7, 8, 9, 12, 52, 64, 65, 66, 67, 75, 76, 77):
+            self.legal_spaces[i] = 0
         self.open_spaces = 61
         self.last_move = None
 
@@ -121,15 +124,20 @@ class Board:
         Note: this function is board-specific to standard Canoe
         """
         idx = point.to_idx()
-        if idx in [0, 3, 4, 5, 6, 7, 8, 9, 12, 52, 64, 65, 66, 67, 75, 76, 77]:
+        try:
+            if not self.legal_spaces[idx]:
+                return False
+            return 1 <= point.row <= self.num_rows and 1 <= point.col <= self.num_cols
+        except Exception:
             return False
-        return 1 <= point.row <= self.num_rows and 1 <= point.col <= self.num_cols
 
-    def get(self, point: Point) -> Optional[Player]:
+    def get(self, point: Point) -> None | Player:
         """Given a point, return the player"""
-        if self.reds[point.to_idx()]:
+        id = point.to_idx()
+
+        if self.reds[id]:
             return Player.red
-        elif self.yellows[point.to_idx()]:
+        elif self.yellows[id]:
             return Player.yellow
         else:
             return None
@@ -236,10 +244,9 @@ class GameState:
 
     # pylint: disable=too-many-instance-attributes
 
-    def __init__(self, board, current_player, previous, move):
+    def __init__(self, board, current_player, move):  # previous, move):
         self.board = board
         self.current_player = current_player
-        self.previous_state = previous
         self.last_move = move
         self.winner = None
         self.winning_canoes = None
@@ -250,12 +257,15 @@ class GameState:
         """Helper function to print the board"""
         self.board.print_board(self.winning_canoes)
 
-    def apply_move(self, move: Move):
+    def apply_move(self, move: Move) -> Self:
         """Apply a chosen move and return the resulting game"""
         if move.is_play:
-            next_board = copy.deepcopy(self.board)
-            next_board.place_peg(self.current_player, move.point)
-        return GameState(next_board, self.current_player.other, self, move)
+            # next_board = copy.deepcopy(self.board)
+            self.board.place_peg(self.current_player, move.point)
+            self.current_player = self.current_player.other
+            self.last_move = move
+        # return GameState(next_board, self.current_player.other, move)
+        return self
 
     def completes_canoe(self, pt: Point, player: Player) -> bool:
         """Return whether a Point pt completes a canoe for Player player"""
@@ -283,11 +293,14 @@ class GameState:
                 return True
         return False
 
-    def is_over(self) -> Optional[int]:
+    def is_over(self) -> bool:
         """Return True iff game is over
 
-        Also set self.winner to 0 for tie, 1 for red win, -1 for yellow win, None for ongoing"""
+        Also set self.winner to 0 for tie, 1 for red win, -1 for yellow win, or
+        None for ongoing"""
         if self.last_move is None:
+            return False
+        if self.moves_made <= 2 * 7:  # requires 8+ moves to win
             return False
         if self.board.open_spaces <= 0:
             self.winner = 0
@@ -299,6 +312,7 @@ class GameState:
             moves = self.board.yellows
         winner = self.current_player.other
         last_move_id = self.last_move.point.to_idx()
+        new_canoe = False
         for s in self.solns_dict[last_move_id]:
             if all(moves[elem] for elem in s):
                 new_canoe = True
@@ -317,7 +331,7 @@ class GameState:
                             return True
         return False
 
-    def legal_moves(self) -> List[Move]:
+    def legal_moves(self) -> list[Move]:
         """Get a list of all legal moves"""
         return [Move.play(pt) for pt in self.board.return_open_spaces()]
 
@@ -331,7 +345,11 @@ class GameState:
     def new_game(cls, first_player: Player = Player.red):
         """Start a new game with a new board"""
         board = Board()
-        return GameState(board, first_player, None, None)
+        return GameState(board, first_player, None)
+
+    @property
+    def moves_made(self):
+        return 61 - self.board.open_spaces
 
 
 def print_error(msg):

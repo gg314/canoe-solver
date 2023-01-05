@@ -3,17 +3,17 @@ encoders.py: encode a GameState into NN/numpy data structures
 """
 
 import numpy as np
-from canoebot.board import Point, Player
+from canoebot.board import GameState, Player, Point
 
 
 class Encoder:
     """Base class for encoding a game into feature planes"""
 
-    def name(self):
+    def name(self) -> str:
         """Give a human-readable name to the encoder"""
         raise NotImplementedError()
 
-    def encode(self, game_state):
+    def encode(self, game_state: GameState) -> np.array:
         """Initialize the encoding"""
         raise NotImplementedError()
 
@@ -25,12 +25,15 @@ class Encoder:
         """Convert an integer back to a Point"""
         raise NotImplementedError()
 
-    def num_points(self):
+    @property
+    def num_points(self) -> int:
         """Return the dimensionality (total number of points) on a board"""
         raise NotImplementedError()
 
-    def shape(self):
-        """Return tuple for the shape of the feature planes, including the number of planes"""
+    @property
+    def shape(self) -> tuple[int, int, int]:
+        """Return tuple for the shape of the feature planes, including the number
+        of planes"""
         raise NotImplementedError()
 
 
@@ -45,8 +48,8 @@ class OnePlaneEncoder(Encoder):
     def name(self):
         return "oneplane"
 
-    def encode(self, game_state):
-        board_tensor = np.zeros(self.shape())
+    def encode(self, game_state: GameState) -> np.array:
+        board_tensor = np.zeros(self.shape)
         current_player = game_state.current_player
         for r in range(self.board_height):
             for c in range(self.board_width):
@@ -65,9 +68,11 @@ class OnePlaneEncoder(Encoder):
         c = index % self.board_width
         return Point(row=r + 1, col=c + 1)
 
+    @property
     def num_points(self):
         return self.board_width * self.board_height
 
+    @property
     def shape(self):
         return (self.board_height, self.board_width, self.num_planes)
 
@@ -91,8 +96,8 @@ class SixPlaneEncoder(Encoder):
     def name(self):
         return "sixplane"
 
-    def encode(self, game_state):
-        board_tensor = np.zeros(self.shape())
+    def encode(self, game_state: GameState) -> np.array:
+        board_tensor = np.zeros(self.shape)
         current_player = game_state.current_player
         if current_player == Player.red:
             board_tensor[:, :, 4] = 1
@@ -122,9 +127,11 @@ class SixPlaneEncoder(Encoder):
         c = index % self.board_width
         return Point(row=r + 1, col=c + 1)
 
+    @property
     def num_points(self):
         return self.board_width * self.board_height
 
+    @property
     def shape(self):
         return (self.board_height, self.board_width, self.num_planes)
 
@@ -148,8 +155,8 @@ class RelativeEncoder(Encoder):
     def name(self):
         return "relative"
 
-    def encode(self, game_state):
-        board_tensor = np.zeros(self.shape())
+    def encode(self, game_state: GameState) -> np.array:
+        board_tensor = np.zeros(self.shape)
         current_player = game_state.current_player
         next_player = game_state.current_player.other
         if current_player == Player.yellow:
@@ -170,7 +177,7 @@ class RelativeEncoder(Encoder):
                     board_tensor[1][r][c] = 1
                 else:
                     board_tensor[2][r][c] = 1
-        return board_tensor
+        return board_tensor.unsqueeze(0)
 
     def encode_point(self, point):
         return self.board_width * (point.row - 1) + (point.col - 1)
@@ -180,9 +187,11 @@ class RelativeEncoder(Encoder):
         c = index % self.board_width
         return Point(row=r + 1, col=c + 1)
 
+    @property
     def num_points(self):
         return self.board_width * self.board_height
 
+    @property
     def shape(self):
         return (self.num_planes, self.board_height, self.board_width)
 
@@ -208,8 +217,8 @@ class ExperimentalEncoder(Encoder):
     def name(self):
         return "eightplane"
 
-    def encode(self, game_state):
-        board_tensor = np.zeros(self.shape())
+    def encode(self, game_state: GameState) -> np.array:
+        board_tensor = np.zeros(self.shape)
         current_player = game_state.current_player
         next_player = game_state.current_player.other
         if current_player == Player.yellow:
@@ -236,18 +245,20 @@ class ExperimentalEncoder(Encoder):
                         board_tensor[7][r][c] = 1
         return board_tensor
 
-    def encode_point(self, point):
+    def encode_point(self, point) -> int:
         return self.board_width * (point.row - 1) + (point.col - 1)
 
-    def decode_point_index(self, index):
+    def decode_point_index(self, index) -> Point:
         r = index // self.board_width
         c = index % self.board_width
         return Point(row=r + 1, col=c + 1)
 
-    def num_points(self):
+    @property
+    def num_points(self) -> int:
         return self.board_width * self.board_height
 
-    def shape(self):
+    @property
+    def shape(self) -> tuple[int, int, int]:
         return (self.num_planes, self.board_height, self.board_width)
 
 

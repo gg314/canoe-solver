@@ -3,6 +3,7 @@ experience.py: record game history and results
 """
 
 from typing import List
+
 import h5py
 import numpy as np
 
@@ -73,9 +74,11 @@ class ExperienceBuffer:
     def serialize(self, h5file):
         """Write Experience buffer to labeled h5 dataset"""
         h5file.create_group("experience")
-        h5file["experience"].create_dataset("states", data=self.states, dtype="i2")
-        h5file["experience"].create_dataset("actions", data=self.actions, dtype="i8")
-        h5file["experience"].create_dataset("rewards", data=self.rewards, dtype="i2")
+        h5file["experience"].create_dataset("states", data=self.states, dtype=np.byte)
+        h5file["experience"].create_dataset(
+            "actions", data=self.actions, dtype=np.uint8
+        )
+        h5file["experience"].create_dataset("rewards", data=self.rewards, dtype=np.byte)
         h5file["experience"].create_dataset(
             "advantages", data=self.advantages, dtype="float32"
         )
@@ -102,7 +105,7 @@ class ExperienceCollector(object):
         self._current_episode_actions = []
         self._current_episode_estimated_values = []
 
-    def record_decision(self, state, action, estimated_value=0):
+    def record_decision(self, state: np.array, action: int, estimated_value: float):
         """Record an action as one datapoint of experience"""
         self._current_episode_states.append(state)
         self._current_episode_actions.append(action)

@@ -2,62 +2,46 @@
 ac-init-agent.py: initialize a keras model for a Canoe agent
 """
 
-import argparse
-from tensorflow.keras.layers import Conv2D, Dense, Flatten, Input
-from tensorflow.keras.models import Model
-from canoebot import encoders
-from canoebot import utils
+from pathlib import Path
+
+import click
+import torch
+
+# from tensorflow.keras.layers import Conv2D, Dense, Flatten, Input
+# from tensorflow.keras.models import Model
+from canoebot import encoders, utils
+from canoebot.agent import ACNet
+from torchsummary import summary
 
 
-def main() -> None:
+@click.command()
+@click.option(
+    "-o",
+    "--output-filename",
+    type=click.Path(dir_okay=False, writable=True),
+    required=False,
+    default="ac1.pt",
+    help="Output file for model",
+)
+def _main(output_filename) -> None:
+    main(Path(output_filename))
+
+
+def main(output_filename: Path) -> None:
     """Creates the bare CNN model. Encoder details may be irrelevant.
 
-    Saves to a file determined by --output
     data_format should be "channels_first" for GPU
     """
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--output", "-o", required=False, default="ac-v1")
-    args = parser.parse_args()
-    output_file = args.output
     encoder = encoders.ExperimentalEncoder()  # or RelativeEncoder
 
-    board_input = Input(shape=encoder.shape(), name="board_input")
+    print(f"Model input shape: {encoder.shape}")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = ACNet(encoder).to(device)
+    summary(model, encoder.shape)
 
-    conv1 = Conv2D(
-        128, (7, 7), padding="same", data_format="channels_first", activation="relu"
-    )(board_input)
-    conv2 = Conv2D(
-        128, (5, 5), padding="same", data_format="channels_first", activation="relu"
-    )(conv1)
-    conv3 = Conv2D(
-        128, (3, 3), padding="same", data_format="channels_first", activation="relu"
-    )(conv2)
-    conv4 = Conv2D(
-        128, (3, 3), padding="same", data_format="channels_first", activation="relu"
-    )(conv3)
-    conv5 = Conv2D(
-        128, (3, 3), padding="same", data_format="channels_first", activation="relu"
-    )(conv4)
-    conv6 = Conv2D(
-        128, (3, 3), padding="same", data_format="channels_first", activation="relu"
-    )(conv5)
-    conv7 = Conv2D(
-        128, (3, 3), padding="same", data_format="channels_first", activation="relu"
-    )(conv6)
-    flat = Flatten()(conv7)
-    processed_board = Dense(512)(flat)
-    policy_hidden_layer = Dense(512, activation="relu")(processed_board)
-    policy_output = Dense(encoder.num_points(), activation="softmax")(
-        policy_hidden_layer
-    )
-    value_hidden_layer = Dense(512, activation="relu")(processed_board)
-    value_output = Dense(1, activation="tanh")(value_hidden_layer)
-
-    model = Model(inputs=board_input, outputs=[policy_output, value_output])
-    model.summary()
-
-    utils.save_model(model, output_file)
+    output_filename = Path("./models/") / output_filename
+    utils.save_model(model, output_filename)
 
 
 if __name__ == "__main__":
-    main()
+    _main()

@@ -2,17 +2,16 @@
 ac-train.py: use self-play experience to train a new iteration of the neural
   net; benchmark against previous iteration.
 """
-import argparse
-import h5py
+import re
+from pathlib import Path
 
-from canoebot import agent
-from canoebot import encoders
-from canoebot import utils
-from canoebot.board import Player, GameState, format_colored
-from canoebot.experience import combine_experience, load_experience, DataGenerator
+import click
+import h5py
 import numpy as np
+from canoebot import agent, encoders, utils
+from canoebot.board import GameState, Player, format_colored
+from canoebot.experience import combine_experience, load_experience
 from scipy.stats import binom
-import tensorflow as tf
 
 
 def make_progress_bar(wins, trials, total, winner):
@@ -29,69 +28,133 @@ def make_progress_bar(wins, trials, total, winner):
     )
 
 
-def main():
-    """Train CNN on experience, benchmark vs. previous iteration"""
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--model-in", required=True)
-    #  parser.add_argument('--model-out', required=True)
-    parser.add_argument(
-        "--learning-rate", type=float, default=0.00000005
-    )  # 00000005 # 000000006 = 50%
-    parser.add_argument("--bs", type=int, default=2048)
-    parser.add_argument("--trials", type=int, default=500)
-    parser.add_argument(
-        "-g",
-        "--generator",
-        help="use generator instead of loading into memory",
-        action="store_true",
-    )
-    parser.add_argument("-m", "--mute", help="suppress messages", action="store_true")
-    parser.add_argument("experience", nargs="+")
-
-    args = parser.parse_args()
-    model_in_filename = "ac-v" + str(args.model_in)
-    experience_files = args.experience
-    model_out_filename = "ac-v" + str(int(args.model_in) + 1)  # args.model_out
-    trials = args.trials
-    learning_rate = args.learning_rate
-    batch_size = args.bs
-
-    agent1 = agent.ACAgent(
-        utils.load_model(model_in_filename), encoders.ExperimentalEncoder()
-    )
-
-    if args.generator:
-        dataset = tf.data.Dataset.from_generator(
-            DataGenerator(experience_files),
-            args=(batch_size,),
-            output_signature=(
-                tf.TensorSpec(shape=(None, 8, 6, 13), dtype=tf.int64),
-                (
-                    tf.TensorSpec(shape=(None, 78), dtype=tf.float64),
-                    tf.TensorSpec(shape=(None,), dtype=tf.int64),
-                ),
-            ),
-        )
-
-        agent1.generator_train(dataset, learning_rate=learning_rate)
+@click.command()
+@click.option(
+    "-i",
+    "--model-in",
+    type=click.Path(dir_okay=False, writable=True),
+    help="Input model file",
+)
+@click.option(
+    "-o",
+    "--model-out",
+    type=click.Path(dir_okay=False, writable=True),
+    help="Output model file",
+)
+@click.option(
+    "-e",
+    "--experience-file",
+    type=click.Path(dir_okay=False, writable=True),
+    help="Input experience file",
+)
+@click.option(
+    "-lr",
+    "--learning-rate",
+    type=float,
+    default=0.00001,
+    help="Learning rate",
+)
+@click.option(
+    "-bs",
+    "--batch-size",
+    type=int,
+    default=128,
+    help="Batch size",
+)
+@click.option(
+    "-t",
+    "--trials",
+    type=int,
+    default=500,
+    help="Number of games to test results",
+)
+@click.option(
+    "-m",
+    "--mute",
+    type=click.BOOL,
+    default=False,
+    help="Supress messages",
+)
+@click.option(
+    "-g",
+    "--generator",
+    type=click.BOOL,
+    default=False,
+    help="Use generator instead of loading into memory",
+)
+def _main(
+    model_in: Path,
+    model_out: Path,
+    experience_file: Path,
+    trials: int,
+    learning_rate: float,
+    batch_size: int,
+    generator: bool,
+    mute: bool,
+):
+    if model_out is None and (m := re.search(r"(\d+)", model_in)):
+        model_out = re.sub(r"(\d+)", lambda e: str(int(e.group(0)) + 1), model_in)
+    if experience_file is None and (m := re.search(r"(\d+)", model_in)):
+        experience_files = list(Path("./experience/").glob(f"exp{m.group(1)}*.h5"))
     else:
-        input("Run without generator?")
+        experience_files = [experience_file]
+
+    main(
+        Path(model_in),
+        Path(model_out),
+        experience_files,
+        trials,
+        learning_rate,
+        batch_size,
+        generator,
+        mute,
+    )
+
+
+def main(
+    model_in: Path,
+    model_out: Path,
+    experience_files: list[Path],
+    trials: int,
+    learning_rate: float,
+    batch_size: int,
+    generator: bool,
+    mute: bool,
+):
+    """Train CNN on experience, benchmark vs. previous iteration"""
+    # model_out_filename = "ac-v" + str(int(args.model_in) + 1)  # args.model_out
+    agent1 = agent.ACAgent(utils.load_model(model_in), encoders.ExperimentalEncoder())
+
+    if False:  # generator:
+        # dataset = tf.data.Dataset.from_generator(
+        #     DataGenerator(experience_files),
+        #     args=(batch_size,),
+        #     output_signature=(
+        #         tf.TensorSpec(shape=(None, 8, 6, 13), dtype=tf.int64),
+        #         (
+        #             tf.TensorSpec(shape=(None, 78), dtype=tf.float64),
+        #             tf.TensorSpec(shape=(None,), dtype=tf.int64),
+        #         ),
+        #     ),
+        # )
+
+        # agent1.generator_train(dataset, learning_rate=learning_rate)
+        pass
+    else:
+        # input("Run without generator?")
         buffers = []
         for exp_filename in experience_files:
-            with h5py.File(
-                "./generated_experience/" + exp_filename + ".h5"
-            ) as exp_file:
+            with h5py.File(exp_filename) as exp_file:
+                print(f"Loading experience from `{exp_filename}`")
                 exp_buffer = load_experience(exp_file)
                 buffers.append(exp_buffer)
         all_experience = combine_experience(buffers)
         agent1.train(all_experience, learning_rate=learning_rate, batch_size=batch_size)
 
-    utils.save_model(agent1.model, model_out_filename)
+    utils.save_model(agent1.model, model_out)
 
     wins = {"new": 0, "old": 0, "ties": 0}
-    agent2 = agent.ACAgent(
-        utils.load_model(model_in_filename), encoders.ExperimentalEncoder()
-    )
+    agent2 = agent.ACAgent(utils.load_model(model_in), encoders.ExperimentalEncoder())
 
     total_moves = 0
     for trial in range(trials):
@@ -118,7 +181,7 @@ def main():
             wins["old"] += 1
         else:
             wins["ties"] += 1
-        if not args.mute:
+        if not mute:
             make_progress_bar(wins["new"], trial + 1, trials, game.winner)
 
     k = int(wins["new"])
@@ -131,4 +194,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    _main()
