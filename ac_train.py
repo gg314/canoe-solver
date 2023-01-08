@@ -185,12 +185,15 @@ def main(
             make_progress_bar(wins["new"], trial + 1, trials, game.winner)
 
     k = int(wins["new"])
+    k2 = int(wins["old"])
+    k3 = k + k2
     wins["new"] = wins["new"] / trials
     wins["old"] = wins["old"] / trials
     wins["ties"] = wins["ties"] / trials
     print(f"\r\nBrenchmark: {wins}")
-    p_val = np.sum([binom.pmf(k, trials, 0.5) for k in range(k, trials + 1)])
+    p_val = np.sum([binom.pmf(k, k3, 0.5) for k in range(k, k3 + 1)])
     print(f"p = {p_val:.3}, average moves = {total_moves / (2 * trials)}")
+    print(f"total = {k + k2}")
 
 
 if __name__ == "__main__":

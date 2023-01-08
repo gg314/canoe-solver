@@ -69,7 +69,7 @@ class Board:
         self.legal_spaces = np.ones(78, dtype=bool)
         for i in (0, 3, 4, 5, 6, 7, 8, 9, 12, 52, 64, 65, 66, 67, 75, 76, 77):
             self.legal_spaces[i] = 0
-        self.open_spaces = 61
+        self.open_spaces: int = 61
         self.last_move = None
 
     def print_board(self, winning_canoes=None):

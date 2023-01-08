@@ -245,10 +245,12 @@ class ExperimentalEncoder(Encoder):
                         board_tensor[7][r][c] = 1
         return board_tensor
 
-    def encode_point(self, point) -> int:
+    def encode_point(self, point: Point) -> int:
+        """Given the one-indexed point (R, C), return the zero-indexed int"""
         return self.board_width * (point.row - 1) + (point.col - 1)
 
-    def decode_point_index(self, index) -> Point:
+    def decode_point_index(self, index: int) -> Point:
+        """Given an index, return the one-indexed point (R, C)"""
         r = index // self.board_width
         c = index % self.board_width
         return Point(row=r + 1, col=c + 1)

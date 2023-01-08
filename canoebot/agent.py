@@ -507,32 +507,29 @@ class GreedyAgent(Agent):
 class ACNet(torch.nn.Module):
     def __init__(self, encoder):
         super().__init__()
-        # self.convTEST2 = nn.Sequential(
-        #     nn.Conv2d(8, 128, (7, 7), padding=3), nn.SELU()
-        # )
-        self.conv1 = nn.Sequential(nn.Conv2d(8, 128, (5, 5), padding=2), nn.SELU())
-        self.conv2 = nn.Sequential(nn.Conv2d(128, 128, (3, 3), padding=1), nn.SELU())
+        self.convIN = nn.Sequential(nn.Conv2d(8, 128, (7, 7), padding=3), nn.ReLU())
+        self.conv1 = nn.Sequential(nn.Conv2d(128, 128, (5, 5), padding=2), nn.ReLU())
+        self.conv2 = nn.Sequential(nn.Conv2d(128, 128, (3, 3), padding=1), nn.ReLU())
 
         self.policy_network = nn.Sequential(
-            nn.Conv2d(128, 1, (1, 1), padding=0),
+            nn.Conv2d(128, 1, (3, 3), padding=1),
             nn.Flatten(),
             nn.Softmax(dim=1),
         )  # flatten to num_points, then softmax each array in the batch
 
         self.value_network = nn.Sequential(
             nn.Conv2d(128, 128, (3, 3), padding=1),
-            nn.SELU(),
+            nn.ReLU(),
             nn.Conv2d(128, 1, (1, 1), padding=0),
-            nn.SELU(),
+            nn.ReLU(),
             nn.Flatten(),
             nn.Linear(encoder.num_points, 256),
-            nn.SELU(),
+            nn.ReLU(),
             nn.Linear(256, 1),
             nn.Tanh(),
         )  # return estimate for winner (between -1 and 1)
 
     def forward(self, x) -> tuple[torch.tensor, torch.tensor]:
-        # x = self.convTEST2(x)
         x = self.conv1(x)
         for _ in range(2, 9):
             x = self.conv2(x)
@@ -567,7 +564,7 @@ class ACAgent(Agent):
         actions, values = self.model.forward(X)
         move_probs = actions[0].detach().numpy()
         estimated_value = values[0][0].item()
-        self.last_move_value = estimated_value
+        # self.last_move_value = estimated_value
 
         # for rr in range(6):
         #   for cc in range(13):
@@ -577,7 +574,7 @@ class ACAgent(Agent):
         eps = 1e-6  # base: 1e-4
         move_probs = np.clip(move_probs, eps, None)
         move_probs = np.multiply(board_tensor[3].flatten(), move_probs)
-        move_probs = move_probs / np.sum(move_probs)
+        move_probs = move_probs / np.sum(move_probs)  # must normalize probabilities
         candidates = np.arange(num_moves)
         ranked_moves = rng.choice(
             candidates,
@@ -639,9 +636,7 @@ class ACAgent(Agent):
         """Train the agent's model with PyTorch"""
 
         optimizer = torch.optim.Adam(
-            self.model.parameters(),
-            lr=learning_rate,
-            betas=(0.9, 0.999),
+            self.model.parameters(), lr=learning_rate, betas=(0.9, 0.999)
         )
         criterion1 = torch.nn.CrossEntropyLoss()
         criterion2 = torch.nn.MSELoss()
@@ -692,5 +687,7 @@ class ACAgent(Agent):
         raise NotImplementedError()
 
     def diagnostics(self):
-        """Return testing diagnostics"""
+        """Return testing diagnostics. For example, values could be set during
+        select_move()
+        """
         return {"value": self.last_move_value}

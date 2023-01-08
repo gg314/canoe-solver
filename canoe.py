@@ -53,6 +53,7 @@ def main(num_games, mute, verbose):
             if last_agent_id is None or m.group(1) > last_agent_id:
                 last_agent_id = m.group(1)
                 last_agent_file = ac
+    print(f"Last AC agent: {last_agent_file}")
 
     agents = {
         "random_agent1": agent.RandomAgent(),
@@ -61,33 +62,16 @@ def main(num_games, mute, verbose):
         "neighbor_agent2": agent.NeighborAgent(),
         "greedy_agent1": agent.GreedyAgent(),
         "greedy_agent2": agent.GreedyAgent(),
-        "ac_agent1": agent.ACAgent(utils.load_model("./models/ac1.pt"), encoder),
-        "ac_agent2": agent.ACAgent(utils.load_model("./models/ac2.pt"), encoder),
-        "ac_agent3": agent.ACAgent(utils.load_model("./models/ac3.pt"), encoder),
+        "ac_agent1": agent.ACAgent(utils.load_model("./models/ac3.pt"), encoder),
+        "ac_agent2": agent.ACAgent(utils.load_model("./models/ac5.pt"), encoder),
+        "ac_agent3": agent.ACAgent(utils.load_model("./models/ac2.pt"), encoder),
         "ac_agent": agent.ACAgent(utils.load_model(last_agent_file), encoder),
-        # "ac_agent4": agent.ACAgent(utils.load_model("ac-v4"), encoder),
-        # "ac_agent5": agent.ACAgent(utils.load_model("ac-v5"), encoder),
-        # "ac_agent6": agent.ACAgent(utils.load_model("ac-v6"), encoder),
-        # "ac_agent7": agent.ACAgent(utils.load_model("ac-v7"), encoder),
-        # "ac_agent8": agent.ACAgent(utils.load_model("ac-v8"), encoder),
-        # "ac_agent9": agent.ACAgent(utils.load_model("ac-v9"), encoder),
-        # "ac_agent10": agent.ACAgent(utils.load_model("ac-v10"), encoder),
-        # "ac_agent11": agent.ACAgent(utils.load_model("ac-v11"), encoder),
-        # "ac_agent12": agent.ACAgent(utils.load_model("ac-v12"), encoder),
-        # "ac_agent13": agent.ACAgent(utils.load_model("ac-v13"), encoder),
-        # "ac_agent14": agent.ACAgent(utils.load_model("ac-v14"), encoder),
-        # "ac_agent15": agent.ACAgent(utils.load_model("ac-v15"), encoder),
-        # "ac_agent16": agent.ACAgent(utils.load_model("ac-v16"), encoder),
-        # "ac_agent17": agent.ACAgent(utils.load_model("ac-v17"), encoder),
-        # "ac_agent18": agent.ACAgent(utils.load_model("ac-v18"), encoder),
-        # "ac_agent19": agent.ACAgent(utils.load_model("ac-v19"), encoder),
-        # "ac_agent20": agent.ACAgent(utils.load_model("ac-v20"), encoder),
         "human1": agent.Human(),
         "human2": agent.Human(),
     }
 
     # all_bots = [f"ac_agent{i}" for i in range(1, 2)]
-    players = ["human1", "ac_agent3"]
+    players = ["ac_agent2", "greedy_agent1"]
     # players = ["random_agent1", "neighbor_agent2"]
     agent1 = agents[players[0]]
     agent2 = agents[players[1]]
